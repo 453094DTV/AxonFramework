@@ -80,5 +80,10 @@ public class AnnotationAggregateRepository<T> implements Repository<T> {
         public String getTypeIdentifier() {
             return aggregateConfiguration.getTypeIdentifier();
         }
+
+        @Override
+        public Class getAggregateType() {
+            return EventSourcedAggregateGuard.class;
+        }
     }
 }
