@@ -1,0 +1,92 @@
+/*
+ * Copyright (c) 2010-2012. Axon Framework
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.axonframework.eventhandling;
+
+import org.axonframework.domain.StubDomainEvent;
+import org.axonframework.eventhandling.annotation.AnnotationEventListenerAdapter;
+import org.axonframework.eventhandling.annotation.EventHandler;
+import org.junit.*;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+import static org.junit.Assert.*;
+
+/**
+ * @author Allard Buijze
+ */
+public class AnnotationClusterSelectorTest {
+
+    private AnnotationClusterSelector testSubject;
+    private SimpleCluster cluster;
+
+    @Before
+    public void setUp() throws Exception {
+        cluster = new SimpleCluster();
+        testSubject = new AnnotationClusterSelector(MyAnnotation.class, cluster);
+    }
+
+    @Test
+    public void testSelectClusterForAnnotatedHandler() {
+        Cluster actual = testSubject.selectCluster(new AnnotationEventListenerAdapter(new AnnotatedEventHandler(),
+                                                                                      null));
+        assertSame(cluster, actual);
+    }
+
+    @Test
+    public void testSelectClusterForAnnotatedHandlerSubClass() {
+        Cluster actual = testSubject.selectCluster(new AnnotationEventListenerAdapter(new AnnotatedSubEventHandler(),
+                                                                                      null));
+        assertSame(cluster, actual);
+    }
+
+    @Test
+    public void testReturnNullWhenNoAnnotationFound() {
+        Cluster actual = testSubject.selectCluster(new AnnotationEventListenerAdapter(new NonAnnotatedEventHandler(),
+                                                                                      null));
+        assertNull("ClusterSelector should not have selected a cluster", actual);
+    }
+
+    @MyAnnotation
+    public static class AnnotatedEventHandler {
+
+        @EventHandler
+        public void handle(StubDomainEvent event) {
+        }
+    }
+
+    public static class AnnotatedSubEventHandler extends AnnotatedEventHandler {
+
+    }
+
+    public static class NonAnnotatedEventHandler {
+
+        @EventHandler
+        public void handle(StubDomainEvent event) {
+        }
+    }
+
+    @Inherited
+    @Target(ElementType.TYPE)
+    @Retention(RetentionPolicy.RUNTIME)
+    public static @interface MyAnnotation {
+
+    }
+}

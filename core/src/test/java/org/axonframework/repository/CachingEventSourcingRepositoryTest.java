@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,8 @@ import org.axonframework.domain.EventMessage;
 import org.axonframework.domain.SimpleDomainEventStream;
 import org.axonframework.domain.StubAggregate;
 import org.axonframework.eventhandling.EventBus;
+import org.axonframework.eventsourcing.AbstractAggregateFactory;
 import org.axonframework.eventsourcing.AggregateDeletedException;
-import org.axonframework.eventsourcing.AggregateFactory;
 import org.axonframework.eventsourcing.CachingEventSourcingRepository;
 import org.axonframework.eventstore.EventStore;
 import org.axonframework.unitofwork.CurrentUnitOfWork;
@@ -91,7 +91,7 @@ public class CachingEventSourcingRepositoryTest {
             eventList.add(events.next());
         }
         assertEquals(2, eventList.size());
-        verify(mockEventBus, times(2)).publish(isA(EventMessage.class));
+        verify(mockEventBus).publish(isA(EventMessage.class), isA(EventMessage.class));
         cache.clear();
 
         reloadedAggregate1 = testSubject.load(aggregate1.getIdentifier(), null);
@@ -124,16 +124,21 @@ public class CachingEventSourcingRepositoryTest {
         CurrentUnitOfWork.commit();
     }
 
-    private static class StubAggregateFactory implements AggregateFactory<StubAggregate> {
+    private static class StubAggregateFactory extends AbstractAggregateFactory<StubAggregate> {
 
         @Override
-        public StubAggregate createAggregate(Object aggregateIdentifier, DomainEventMessage firstEvent) {
+        public StubAggregate doCreateAggregate(Object aggregateIdentifier, DomainEventMessage firstEvent) {
             return new StubAggregate(aggregateIdentifier);
         }
 
         @Override
         public String getTypeIdentifier() {
             return "mock";
+        }
+
+        @Override
+        public Class<StubAggregate> getAggregateType() {
+            return StubAggregate.class;
         }
     }
 

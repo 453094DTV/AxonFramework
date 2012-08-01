@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,12 +23,14 @@ import org.axonframework.serializer.SerializedObject;
 import org.axonframework.serializer.SimpleSerializedObject;
 import org.joda.time.DateTime;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import javax.persistence.Basic;
-import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.IdClass;
 import javax.persistence.Lob;
 import javax.persistence.MappedSuperclass;
+import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
 /**
@@ -38,30 +40,29 @@ import javax.persistence.UniqueConstraint;
  * @since 0.5
  */
 @MappedSuperclass
-@UniqueConstraint(columnNames = {"eventIdentifier"})
-abstract class AbstractEventEntry implements SerializedDomainEventData {
+@Table(uniqueConstraints =
+       @UniqueConstraint(columnNames = {"eventIdentifier"}))
+@IdClass(AbstractEventEntry.PK.class)
+public abstract class AbstractEventEntry implements SerializedDomainEventData {
 
     @Id
-    @GeneratedValue
-    private Long id;
-    @Basic
-    private String eventIdentifier;
-    @Basic
-    private String aggregateIdentifier;
-    @Basic
-    private long sequenceNumber;
-    @Basic
-    private String timeStamp;
-    @Basic
     private String type;
-    @Basic
+    @Id
+    private String aggregateIdentifier;
+    @Id
+    private long sequenceNumber;
+    @Basic(optional = false)
+    private String eventIdentifier;
+    @Basic(optional = false)
+    private String timeStamp;
+    @Basic(optional = false)
     private String payloadType;
     @Basic
     private String payloadRevision;
     @Basic
     @Lob
     private byte[] metaData;
-    @Basic
+    @Basic(optional = false)
     @Lob
     private byte[] payload;
 
@@ -135,15 +136,6 @@ abstract class AbstractEventEntry implements SerializedDomainEventData {
         return eventIdentifier;
     }
 
-    /**
-     * Returns the database-generated identifier for this entry.
-     *
-     * @return the database-generated identifier for this entry
-     */
-    public Long getId() {
-        return id;
-    }
-
     @Override
     public SerializedObject<byte[]> getPayload() {
         return new SimpleSerializedObject<byte[]>(payload, byte[].class, payloadType, payloadRevision);
@@ -152,5 +144,65 @@ abstract class AbstractEventEntry implements SerializedDomainEventData {
     @Override
     public SerializedObject<byte[]> getMetaData() {
         return new SerializedMetaData<byte[]>(metaData, byte[].class);
+    }
+
+    /**
+     * Primary key definition of the AbstractEventEntry class. Is used by JPA to support composite primary keys.
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    public static class PK implements Serializable {
+
+        private static final long serialVersionUID = 9182347799552520594L;
+
+        private String aggregateIdentifier;
+        private String type;
+        private long sequenceNumber;
+
+        /**
+         * Constructor for JPA. Not to be used directly
+         */
+        PK() {
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+
+            PK pk = (PK) o;
+
+            if (sequenceNumber != pk.sequenceNumber) {
+                return false;
+            }
+            if (!aggregateIdentifier.equals(pk.aggregateIdentifier)) {
+                return false;
+            }
+            if (!type.equals(pk.type)) {
+                return false;
+            }
+
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = aggregateIdentifier.hashCode();
+            result = 31 * result + type.hashCode();
+            result = 31 * result + (int) (sequenceNumber ^ (sequenceNumber >>> 32));
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return "PK{" +
+                    "type='" + type + '\'' +
+                    ", aggregateIdentifier='" + aggregateIdentifier + '\'' +
+                    ", sequenceNumber=" + sequenceNumber +
+                    '}';
+        }
     }
 }

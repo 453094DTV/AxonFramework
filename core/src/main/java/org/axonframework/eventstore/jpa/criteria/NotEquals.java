@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ package org.axonframework.eventstore.jpa.criteria;
  * @author Allard Buijze
  * @since 2.0
  */
-class NotEquals extends JpaCriteria {
+public class NotEquals extends JpaCriteria {
 
     private final JpaProperty property;
     private final Object expression;
@@ -44,12 +44,13 @@ class NotEquals extends JpaCriteria {
         property.parse(entryKey, whereClause);
         if (expression == null) {
             whereClause.append(" IS NOT NULL");
-        } else if (expression instanceof JpaProperty) {
-            whereClause.append(" = ");
-            ((JpaProperty) expression).parse(entryKey, whereClause);
         } else {
-            whereClause.append(" <> ")
-                       .append(parameters.register(expression.toString()));
+            whereClause.append(" <> ");
+            if (expression instanceof JpaProperty) {
+                ((JpaProperty) expression).parse(entryKey, whereClause);
+            } else {
+                whereClause.append(parameters.register(expression));
+            }
         }
     }
 }

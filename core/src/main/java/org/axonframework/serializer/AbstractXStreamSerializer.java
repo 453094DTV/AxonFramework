@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2010-2012. Axon Framework
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.axonframework.serializer;
 
 import com.thoughtworks.xstream.XStream;
@@ -15,6 +31,7 @@ import org.axonframework.domain.GenericEventMessage;
 import org.axonframework.domain.MetaData;
 import org.joda.time.DateTime;
 
+import java.io.ObjectStreamClass;
 import java.lang.reflect.Constructor;
 import java.nio.charset.Charset;
 import java.util.HashMap;
@@ -36,13 +53,6 @@ public abstract class AbstractXStreamSerializer implements Serializer {
     private ConverterFactory converterFactory;
 
     /**
-     * Initialize a generic serializer using the UTF-8 character set and a default XStream instance.
-     */
-    protected AbstractXStreamSerializer() {
-        this(DEFAULT_CHARSET_NAME);
-    }
-
-    /**
      * Initialize a generic serializer using the UTF-8 character set. The provided XStream instance  is used to perform
      * the serialization.
      *
@@ -50,16 +60,6 @@ public abstract class AbstractXStreamSerializer implements Serializer {
      */
     protected AbstractXStreamSerializer(XStream xStream) {
         this(DEFAULT_CHARSET_NAME, xStream);
-    }
-
-    /**
-     * Initialize the serializer using the given <code>charset</code>. A default XStream instance (with {@link
-     * com.thoughtworks.xstream.io.xml.XppDriver}) is used to perform the serialization.
-     *
-     * @param charset The character set to use
-     */
-    public AbstractXStreamSerializer(Charset charset) {
-        this(charset, new XStream());
     }
 
     /**
@@ -179,7 +179,11 @@ public abstract class AbstractXStreamSerializer implements Serializer {
      */
     protected String revisionOf(Class<?> type) {
         Revision revision = type.getAnnotation(Revision.class);
-        return revision == null ? null : revision.value();
+        if (revision != null) {
+            return revision.value();
+        }
+        ObjectStreamClass objectStreamClass = ObjectStreamClass.lookup(type);
+        return objectStreamClass == null ? null : Long.toString(objectStreamClass.getSerialVersionUID());
     }
 
     /**
@@ -197,6 +201,11 @@ public abstract class AbstractXStreamSerializer implements Serializer {
     @Override
     public Class classForType(SerializedType type) {
         return xStream.getMapper().realClass(type.getName());
+    }
+
+    @Override
+    public SerializedType typeForClass(Class type) {
+        return new SimpleSerializedType(typeIdentifierOf(type), revisionOf(type));
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,12 +47,18 @@ public class FixtureTest_Generic {
                .when(new CreateAggregateCommand());
     }
 
+    @Test(expected = FixtureExecutionException.class)
+    public void testInjectResources_CommandHandlerAlreadyRegistered() {
+        fixture.registerAnnotatedCommandHandler(new MyCommandHandler(fixture.getRepository(), fixture.getEventBus()));
+        fixture.registerInjectableResource("I am injectable");
+    }
+
     @Test
     public void testAggregateIdentifier_IdentifierAutomaticallyDeducted() {
         fixture.registerAnnotatedCommandHandler(new MyCommandHandler(fixture.getRepository(), fixture.getEventBus()));
-        fixture.given(new MyEvent(1), new MyEvent(2))
+        fixture.given(new MyEvent("AggregateId", 1), new MyEvent("AggregateId", 2))
                .when(new TestCommand("AggregateId"))
-               .expectEvents(new MyEvent(3));
+               .expectEvents(new MyEvent("AggregateId", 3));
 
         DomainEventStream events = fixture.getEventStore().readEvents("StandardAggregate", "AggregateId");
         for (int t=0;t<3;t++) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Allard Buijze
  * @since 0.6
  */
-class SimpleCommandBusStatistics implements SimpleCommandBusStatisticsMXBean {
+public class SimpleCommandBusStatistics implements SimpleCommandBusStatisticsMXBean {
 
     private AtomicLong handlerCounter = new AtomicLong(0);
     private AtomicLong receivedCommandCounter = new AtomicLong(0);

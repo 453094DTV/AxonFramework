@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import org.axonframework.domain.SimpleDomainEventStream;
 import org.axonframework.domain.StubAggregate;
 import org.axonframework.eventstore.SnapshotEventStore;
 import org.junit.*;
+import org.mockito.invocation.*;
+import org.mockito.stubbing.*;
 
 import java.util.Arrays;
 import java.util.UUID;
@@ -62,11 +64,10 @@ public class AggregateSnapshotterTest {
         when(aggregate.getIdentifier()).thenReturn(aggregateIdentifier);
         when(mockAggregateFactory.createAggregate(aggregateIdentifier, firstEvent)).thenReturn(aggregate);
 
-        AggregateSnapshot snapshot = (AggregateSnapshot) testSubject.createSnapshot("test", aggregateIdentifier,
-                                                                                    eventStream);
+        DomainEventMessage snapshot =  testSubject.createSnapshot("test", aggregateIdentifier, eventStream);
 
         verify(mockAggregateFactory).createAggregate(aggregateIdentifier, firstEvent);
-        assertSame(aggregate, snapshot.getAggregate());
+        assertSame(aggregate, snapshot.getPayload());
     }
 
     @Test
@@ -76,20 +77,25 @@ public class AggregateSnapshotterTest {
         aggregate.doSomething();
         aggregate.commitEvents();
 
-        Snapshot<StubAggregate> first = new AggregateSnapshot<StubAggregate>(aggregate);
+        DomainEventMessage<StubAggregate> first =
+                new GenericDomainEventMessage<StubAggregate>(
+                        aggregate.getIdentifier(), aggregate.getVersion(), aggregate);
         DomainEventMessage secondEvent = new GenericDomainEventMessage<String>(aggregateIdentifier, (long) 0,
                                                                                "Mock contents", MetaData.emptyInstance()
         );
         SimpleDomainEventStream eventStream = new SimpleDomainEventStream(first, secondEvent);
 
         when(mockAggregateFactory.createAggregate(any(), any(DomainEventMessage.class)))
-                .thenThrow(new AssertionError("This invocation is not expected. When an aggregate snapshot is read, "
-                                                      + "the aggregate should be extracted from there."));
+                .thenAnswer(new Answer<Object>() {
+                    @Override
+                    public Object answer(InvocationOnMock invocation) throws Throwable {
+                        return ((DomainEventMessage)invocation.getArguments()[1]).getPayload();
+                    }
+                });
 
-        AggregateSnapshot snapshot = (AggregateSnapshot) testSubject.createSnapshot("test", aggregateIdentifier,
-                                                                                    eventStream);
-        assertSame("Snapshotter did not recognize the aggregate snapshot", aggregate, snapshot.getAggregate());
+        DomainEventMessage snapshot = testSubject.createSnapshot("test", aggregateIdentifier, eventStream);
+        assertSame("Snapshotter did not recognize the aggregate snapshot", aggregate, snapshot.getPayload());
 
-        verify(mockAggregateFactory, never()).createAggregate(any(), any(DomainEventMessage.class));
+        verify(mockAggregateFactory).createAggregate(any(), any(DomainEventMessage.class));
     }
 }

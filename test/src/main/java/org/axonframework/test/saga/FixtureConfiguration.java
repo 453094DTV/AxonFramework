@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.axonframework.test.saga;
 
+import org.axonframework.test.utils.CallbackBehavior;
 import org.joda.time.DateTime;
 
 /**
@@ -39,6 +40,13 @@ public interface FixtureConfiguration {
      * @param resource the resource to register.
      */
     void registerResource(Object resource);
+
+    /**
+     * Sets the instance that defines the behavior of the Command Bus when a command is dispatched with a callback.
+     *
+     * @param callbackBehavior The instance deciding to how the callback should be invoked.
+     */
+    void setCallbackBehavior(CallbackBehavior callbackBehavior);
 
     /**
      * Use this method to indicate that an aggregate with given identifier published certain events.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,20 +25,16 @@ import org.axonframework.commandhandling.distributed.CommandDispatchException;
 import org.axonframework.commandhandling.distributed.ConsistentHash;
 import org.axonframework.commandhandling.distributed.RemoteCommandHandlingException;
 import org.axonframework.common.Assert;
+import org.axonframework.common.AxonConfigurationException;
 import org.axonframework.serializer.Serializer;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.View;
-import org.jgroups.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -115,30 +111,40 @@ public class JGroupsConnector implements CommandBusConnector {
      * members (proportionally) lower values will result in a less evenly distributed hash.
      *
      * @param loadFactor The load factor for this node.
-     * @throws Exception when an error occurs while connecting
+     * @throws ConnectionFailedException when an error occurs while connecting
      */
-    public synchronized void connect(int loadFactor) throws Exception {
+    public synchronized void connect(int loadFactor) throws ConnectionFailedException {
         this.currentLoadFactor = loadFactor;
         Assert.isTrue(loadFactor >= 0, "Load Factor must be a positive integer value.");
         Assert.isTrue(channel.getReceiver() == null || channel.getReceiver() == messageReceiver,
                       "The given channel already has a receiver configured. "
                               + "Has the channel been reused with other Connectors?");
         try {
+            if (channel.isConnected() && !clusterName.equals(channel.getClusterName())) {
+                throw new AxonConfigurationException("The Channel that has been configured with this JGroupsConnector "
+                                                             + "is already connected, but not through this cluster");
+            } else if (channel.isConnected() && channel.getReceiver() != messageReceiver) {
+                logger.warn("The given channel was already connected, but not properly configured to process incoming "
+                                    + "messages. Reconnecting to ensure proper state. To prevent this warning, provide"
+                                    + "a Channel that is not connected.");
+                channel.disconnect();
+            }
             channel.setReceiver(messageReceiver);
             channel.connect(clusterName, null, 10000);
-            updateMembership();
+            // send update to entire cluster
+            sendMembershipUpdate(null);
         } catch (Exception e) {
             joinedCondition.markJoined(false);
             channel.disconnect();
-            throw e;
+            throw new ConnectionFailedException("Failed to connect to JGroupsConnectorFactoryBean", e);
         }
     }
 
-    private void updateMembership() throws MembershipUpdateFailedException {
+    private void sendMembershipUpdate(Address dest) throws MembershipUpdateFailedException {
         try {
             if (channel.isConnected()) {
-                channel.send(new Message(null, new JoinMessage(currentLoadFactor, new HashSet<String>(
-                        supportedCommandTypes)))
+                channel.send(new Message(dest, new JoinMessage(currentLoadFactor,
+                                                               new HashSet<String>(supportedCommandTypes)))
                                      .setFlag(Message.Flag.RSVP));
             }
         } catch (Exception e) {
@@ -201,7 +207,7 @@ public class JGroupsConnector implements CommandBusConnector {
     public synchronized <C> void subscribe(Class<C> commandType, CommandHandler<? super C> handler) {
         localSegment.subscribe(commandType, handler);
         if (supportedCommandTypes.add(commandType.getName())) {
-            updateMembership();
+            sendMembershipUpdate(null);
         }
     }
 
@@ -209,7 +215,7 @@ public class JGroupsConnector implements CommandBusConnector {
     public synchronized <C> boolean unsubscribe(Class<C> commandType, CommandHandler<? super C> handler) {
         if (localSegment.unsubscribe(commandType, handler)) {
             if (supportedCommandTypes.remove(commandType.getName())) {
-                updateMembership();
+                sendMembershipUpdate(null);
             }
             return true;
         }
@@ -236,15 +242,7 @@ public class JGroupsConnector implements CommandBusConnector {
 
     private class MessageReceiver extends ReceiverAdapter {
 
-        @Override
-        public void getState(OutputStream ostream) throws Exception {
-            Util.objectToStream(consistentHash, new DataOutputStream(ostream));
-        }
-
-        @Override
-        public void setState(InputStream istream) throws Exception {
-            consistentHash = (ConsistentHash) Util.objectFromStream(new DataInputStream(istream));
-        }
+        private volatile View currentView;
 
         @Override
         public void viewAccepted(View view) {
@@ -271,6 +269,18 @@ public class JGroupsConnector implements CommandBusConnector {
                             messagesLost);
                 }
             }
+            if (!view.equals(currentView)) {
+                for (Address member : view.getMembers()) {
+                    if (currentView == null || !currentView.containsMember(member)) {
+                        // we don't need logging if
+                        if (logger.isWarnEnabled() && !channel.getAddress().equals(member)) {
+                            logger.warn("New member detected: [{}]. Sending it my configuration.", member.toString());
+                        }
+                        sendMembershipUpdate(member);
+                    }
+                }
+            }
+            currentView = view;
         }
 
         @Override

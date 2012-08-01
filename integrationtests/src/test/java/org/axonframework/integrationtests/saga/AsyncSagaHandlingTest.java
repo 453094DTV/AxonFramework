@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,9 +28,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -102,17 +99,14 @@ public class AsyncSagaHandlingTest {
             currentAssociation = newAssociation;
         }
         sagaManager.stop();
-        Set<AsyncSaga> result = sagaRepository.find(AsyncSaga.class, Collections.singleton(new AssociationValue(
-                "currentAssociation",
-                currentAssociation.toString())));
+        Set<AsyncSaga> result = sagaRepository.find(AsyncSaga.class,
+                                                    new AssociationValue("currentAssociation",
+                                                                         currentAssociation.toString()));
         assertEquals(1, result.size());
     }
 
     private void validateSaga(UUID myId) {
-        Set<AsyncSaga> sagas = sagaRepository.find(AsyncSaga.class,
-                                                   new HashSet<AssociationValue>(Arrays.asList(new AssociationValue(
-                                                           "myId",
-                                                           myId.toString()))));
+        Set<AsyncSaga> sagas = sagaRepository.find(AsyncSaga.class, new AssociationValue("myId", myId.toString()));
         assertEquals(1, sagas.size());
         AsyncSaga saga = sagas.iterator().next();
         Iterator<String> messageIterator = saga.getReceivedMessages().iterator();

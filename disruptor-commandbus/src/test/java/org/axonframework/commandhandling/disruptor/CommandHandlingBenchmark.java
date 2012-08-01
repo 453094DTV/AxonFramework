@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,7 +81,7 @@ public class CommandHandlingBenchmark {
         System.out.println(String.format("Just did %d commands per second", ((COMMAND_COUNT * 1000) / (t2 - t1))));
     }
 
-    private static class MyAggregate extends AbstractAnnotatedAggregateRoot {
+    private static class MyAggregate extends AbstractAnnotatedAggregateRoot<UUID> {
 
         private final UUID identifier;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.axonframework.eventstore.jpa;
 
 import org.axonframework.domain.DomainEventMessage;
 import org.axonframework.serializer.SerializedObject;
+import org.joda.time.DateTime;
 
 import java.util.Iterator;
 import java.util.List;
@@ -34,9 +35,10 @@ import javax.persistence.Query;
  * @author Allard Buijze
  * @since 1.2
  */
-class DefaultEventEntryStore implements EventEntryStore {
+public class DefaultEventEntryStore implements EventEntryStore {
 
     @Override
+    @SuppressWarnings({"unchecked"})
     public void persistEvent(String aggregateType, DomainEventMessage event, SerializedObject serializedPayload,
                              SerializedObject serializedMetaData, EntityManager entityManager) {
         entityManager.persist(new DomainEventEntry(aggregateType, event, serializedPayload, serializedMetaData));
@@ -44,18 +46,20 @@ class DefaultEventEntryStore implements EventEntryStore {
 
     @Override
     @SuppressWarnings({"unchecked"})
-    public SnapshotEventEntry loadLastSnapshotEvent(String aggregateType, Object identifier,
-                                                    EntityManager entityManager) {
-        List<SnapshotEventEntry> entries = entityManager.createQuery(
-                "SELECT e "
-                        + "FROM SnapshotEventEntry e "
-                        + "WHERE e.aggregateIdentifier = :id AND e.type = :type "
-                        + "ORDER BY e.sequenceNumber DESC")
-                                                        .setParameter("id", identifier.toString())
-                                                        .setParameter("type", aggregateType)
-                                                        .setMaxResults(1)
-                                                        .setFirstResult(0)
-                                                        .getResultList();
+    public SimpleSerializedDomainEventData loadLastSnapshotEvent(String aggregateType, Object identifier,
+                                                                 EntityManager entityManager) {
+        List<SimpleSerializedDomainEventData> entries = entityManager
+                .createQuery("SELECT new org.axonframework.eventstore.jpa.SimpleSerializedDomainEventData("
+                                     + "e.eventIdentifier, e.aggregateIdentifier, e.sequenceNumber, "
+                                     + "e.timeStamp, e.payloadType, e.payloadRevision, e.payload, e.metaData) "
+                                     + "FROM SnapshotEventEntry e "
+                                     + "WHERE e.aggregateIdentifier = :id AND e.type = :type "
+                                     + "ORDER BY e.sequenceNumber DESC")
+                .setParameter("id", identifier.toString())
+                .setParameter("type", aggregateType)
+                .setMaxResults(1)
+                .setFirstResult(0)
+                .getResultList();
         if (entries.size() < 1) {
             return null;
         }
@@ -67,13 +71,23 @@ class DefaultEventEntryStore implements EventEntryStore {
     public List<DomainEventEntry> fetchFilteredBatch(String whereClause, Map<String, Object> parameters,
                                                      int startPosition, int batchSize,
                                                      EntityManager entityManager) {
+//        String eventIdentifier, String aggregateIdentifier, long sequenceNumber,
+//        String timeStamp, String payloadType, String payloadRevision, byte[] payload,
+//        byte[] metaData
         Query query = entityManager.createQuery(
-                String.format("SELECT e FROM DomainEventEntry e %s ORDER BY e.timeStamp ASC, e.sequenceNumber ASC",
+                String.format("SELECT new org.axonframework.eventstore.jpa.SimpleSerializedDomainEventData("
+                                      + "e.eventIdentifier, e.aggregateIdentifier, e.sequenceNumber, "
+                                      + "e.timeStamp, e.payloadType, e.payloadRevision, e.payload, e.metaData) "
+                                      + "FROM DomainEventEntry e %s ORDER BY e.timeStamp ASC, e.sequenceNumber ASC",
                               whereClause != null && whereClause.length() > 0 ? "WHERE " + whereClause : ""))
                                    .setFirstResult(startPosition)
                                    .setMaxResults(batchSize);
         for (Map.Entry<String, Object> entry : parameters.entrySet()) {
-            query.setParameter(entry.getKey(), entry.getValue());
+            Object value = entry.getValue();
+            if (value instanceof DateTime) {
+                value = entry.getValue().toString();
+            }
+            query.setParameter(entry.getKey(), value);
         }
         return query.getResultList();
     }
@@ -133,15 +147,18 @@ class DefaultEventEntryStore implements EventEntryStore {
     @Override
     public List<DomainEventEntry> fetchBatch(String aggregateType, Object identifier, long firstSequenceNumber,
                                              int batchSize, EntityManager entityManager) {
-        return (List<DomainEventEntry>) entityManager.createQuery(
-                "SELECT e "
-                        + "FROM DomainEventEntry e "
-                        + "WHERE e.aggregateIdentifier = :id AND e.type = :type AND e.sequenceNumber >= :seq "
-                        + "ORDER BY e.sequenceNumber ASC")
-                                                     .setParameter("id", identifier.toString())
-                                                     .setParameter("type", aggregateType)
-                                                     .setParameter("seq", firstSequenceNumber)
-                                                     .setMaxResults(batchSize)
-                                                     .getResultList();
+        return (List<DomainEventEntry>) entityManager
+                .createQuery("SELECT new org.axonframework.eventstore.jpa.SimpleSerializedDomainEventData("
+                                     + "e.eventIdentifier, e.aggregateIdentifier, e.sequenceNumber, "
+                                     + "e.timeStamp, e.payloadType, e.payloadRevision, e.payload, e.metaData) "
+                                     + "FROM DomainEventEntry e "
+                                     + "WHERE e.aggregateIdentifier = :id AND e.type = :type "
+                                     + "AND e.sequenceNumber >= :seq "
+                                     + "ORDER BY e.sequenceNumber ASC")
+                .setParameter("id", identifier.toString())
+                .setParameter("type", aggregateType)
+                .setParameter("seq", firstSequenceNumber)
+                .setMaxResults(batchSize)
+                .getResultList();
     }
 }

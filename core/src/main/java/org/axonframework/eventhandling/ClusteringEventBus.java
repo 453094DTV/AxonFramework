@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+
+import static java.lang.String.format;
 
 /**
  * {@link EventBus} implementation that supports clustering of Event Listeners. Clusters are connected using {@link
@@ -101,6 +103,16 @@ public class ClusteringEventBus implements EventBus {
 
     private synchronized Cluster clusterFor(EventListener eventListener) {
         Cluster cluster = clusterSelector.selectCluster(eventListener);
+        if (cluster == null) {
+            Class listenerType = eventListener.getClass();
+            if (eventListener instanceof EventListenerProxy) {
+                listenerType = ((EventListenerProxy) eventListener).getTargetType();
+            }
+            throw new EventListenerSubscriptionFailedException(format(
+                    "Unable to subscribe [%s] to the Event Bus. There is no suitable cluster for it. "
+                            + "Make sure the ClusterSelector is configured properly",
+                    listenerType.getName()));
+        }
         if (clusters.add(cluster)) {
             terminal.onClusterCreated(cluster);
         }

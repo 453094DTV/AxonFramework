@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import org.apache.commons.collections.set.ListOrderedSet;
 import org.axonframework.domain.EventMessage;
 import org.axonframework.domain.GenericEventMessage;
 import org.axonframework.eventhandling.EventBus;
+import org.axonframework.testutils.MockException;
 import org.junit.*;
 
 import java.util.Arrays;
@@ -60,6 +61,11 @@ public class SagaManagerTest {
             protected Set<Saga> findSagas(EventMessage event) {
                 return setOf(mockSaga1, mockSaga2, mockSaga3);
             }
+
+            @Override
+            public Class<?> getTargetType() {
+                return Saga.class;
+            }
         };
     }
 
@@ -87,7 +93,7 @@ public class SagaManagerTest {
     public void testExceptionPropagated() {
         testSubject.setSuppressExceptions(false);
         EventMessage event = new GenericEventMessage<Object>(new Object());
-        doThrow(new RuntimeException("Mock")).when(mockSaga1).handle(event);
+        doThrow(new MockException()).when(mockSaga1).handle(event);
         try {
             testSubject.handle(event);
             fail("Expected exception to be propagated");
@@ -103,7 +109,7 @@ public class SagaManagerTest {
     @Test
     public void testExceptionSuppressed() {
         EventMessage event = new GenericEventMessage<Object>(new Object());
-        doThrow(new RuntimeException("Mock")).when(mockSaga1).handle(event);
+        doThrow(new MockException()).when(mockSaga1).handle(event);
 
         testSubject.handle(event);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,17 @@ import org.axonframework.commandhandling.CommandMessage;
 import org.axonframework.commandhandling.GenericCommandMessage;
 import org.axonframework.commandhandling.InterceptorChain;
 import org.axonframework.domain.DomainEventMessage;
+import org.axonframework.domain.EventMessage;
 import org.axonframework.domain.StubAggregate;
 import org.axonframework.eventhandling.EventBus;
+import org.axonframework.testutils.MockException;
 import org.axonframework.unitofwork.CurrentUnitOfWork;
 import org.axonframework.unitofwork.DefaultUnitOfWork;
 import org.axonframework.unitofwork.SaveAggregateCallback;
 import org.axonframework.unitofwork.UnitOfWork;
+import org.hamcrest.Description;
 import org.junit.*;
+import org.junit.internal.matchers.*;
 
 import java.util.Collections;
 import java.util.List;
@@ -68,8 +72,7 @@ public class AuditingInterceptorTest {
 
     @Test
     public void testInterceptCommand_SuccessfulExecution() throws Throwable {
-        when(mockInterceptorChain.proceed())
-                .thenReturn("Return value");
+        when(mockInterceptorChain.proceed()).thenReturn("Return value");
         UnitOfWork uow = DefaultUnitOfWork.startAndGet();
         StubAggregate aggregate = new StubAggregate();
         uow.registerAggregate(aggregate, mock(EventBus.class), mock(SaveAggregateCallback.class));
@@ -84,7 +87,7 @@ public class AuditingInterceptorTest {
         uow.commit();
 
         verify(mockAuditDataProvider, atLeast(1)).provideAuditDataFor(command);
-        verify(mockAuditLogger, times(1)).logSuccessful(eq(command), any(Object.class), any(List.class));
+        verify(mockAuditLogger, times(1)).logSuccessful(eq(command), any(Object.class), listWithTwoEventMessages());
         DomainEventMessage eventFromAggregate = aggregate.getUncommittedEvents().next();
         assertEquals("value", eventFromAggregate.getMetaData().get("key"));
     }
@@ -92,14 +95,10 @@ public class AuditingInterceptorTest {
     @SuppressWarnings({"ThrowableResultOfMethodCallIgnored"})
     @Test
     public void testInterceptCommand_FailedExecution() throws Throwable {
-        RuntimeException mockException = new RuntimeException("Mock");
-        when(mockInterceptorChain.proceed())
-                .thenThrow(mockException);
+        RuntimeException mockException = new MockException();
+        when(mockInterceptorChain.proceed()).thenThrow(mockException);
         UnitOfWork uow = DefaultUnitOfWork.startAndGet();
-        StubAggregate aggregate = new StubAggregate();
-        aggregate.doSomething();
-        aggregate.doSomething();
-        uow.registerAggregate(aggregate, mock(EventBus.class), mock(SaveAggregateCallback.class));
+
         GenericCommandMessage command = new GenericCommandMessage("Command!");
         try {
             testSubject.handle(command, uow, mockInterceptorChain);
@@ -107,11 +106,30 @@ public class AuditingInterceptorTest {
             assertSame(mockException, e);
         }
 
-        verify(mockAuditDataProvider, never()).provideAuditDataFor(any(CommandMessage.class));
+        StubAggregate aggregate = new StubAggregate();
+        uow.registerAggregate(aggregate, mock(EventBus.class), mock(SaveAggregateCallback.class));
+        aggregate.doSomething();
+        aggregate.doSomething();
+
         RuntimeException mockFailure = new RuntimeException("mock");
         uow.rollback(mockFailure);
-        verify(mockAuditDataProvider, never()).provideAuditDataFor(any(CommandMessage.class));
+
+        verify(mockAuditDataProvider, times(2)).provideAuditDataFor(any(CommandMessage.class));
         verify(mockAuditLogger, never()).logSuccessful(eq(command), any(Object.class), any(List.class));
-        verify(mockAuditLogger).logFailed(eq(command), eq(mockFailure), any(List.class));
+        verify(mockAuditLogger).logFailed(eq(command), eq(mockFailure), listWithTwoEventMessages());
+    }
+
+    private List<EventMessage> listWithTwoEventMessages() {
+        return argThat(new TypeSafeMatcher<List<EventMessage>>() {
+            @Override
+            public boolean matchesSafely(List<EventMessage> item) {
+                return item != null && item.size() == 2;
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("A List with two EventMessages");
+            }
+        });
     }
 }

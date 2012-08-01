@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import org.axonframework.serializer.SerializedObject;
 import org.axonframework.serializer.SerializedType;
 import org.axonframework.serializer.Serializer;
 import org.axonframework.serializer.SimpleSerializedObject;
+import org.axonframework.serializer.SimpleSerializedType;
 import org.axonframework.upcasting.UpcasterChain;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
@@ -51,9 +52,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import javax.persistence.EntityExistsException;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-import javax.persistence.PersistenceException;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -77,12 +78,10 @@ public class JpaEventStoreTest {
 
     private StubAggregateRoot aggregate1;
     private StubAggregateRoot aggregate2;
-    private Object mockAggregateIdentifier;
 
     @Before
     public void setUp() {
-        mockAggregateIdentifier = UUID.randomUUID();
-        aggregate1 = new StubAggregateRoot(mockAggregateIdentifier);
+        aggregate1 = new StubAggregateRoot(UUID.randomUUID());
         for (int t = 0; t < 10; t++) {
             aggregate1.changeState();
         }
@@ -240,6 +239,7 @@ public class JpaEventStoreTest {
         testSubject.appendEvents("test", new SimpleDomainEventStream(domainEvents));
         final Serializer serializer = new Serializer() {
 
+            @SuppressWarnings("unchecked")
             @Override
             public <T> SerializedObject<T> serialize(Object object, Class<T> expectedType) {
                 Assert.assertEquals(byte[].class, expectedType);
@@ -252,7 +252,7 @@ public class JpaEventStoreTest {
             }
 
             @Override
-            public Object deserialize(SerializedObject serializedObject) {
+            public <S, T> T deserialize(SerializedObject<S> serializedObject) {
                 throw new UnsupportedOperationException("Not implemented yet");
             }
 
@@ -263,6 +263,11 @@ public class JpaEventStoreTest {
                 } catch (ClassNotFoundException e) {
                     return null;
                 }
+            }
+
+            @Override
+            public SerializedType typeForClass(Class type) {
+                return new SimpleSerializedType(type.getName(), "");
             }
         };
         final DomainEventMessage<String> stubDomainEvent = new GenericDomainEventMessage<String>(
@@ -293,6 +298,7 @@ public class JpaEventStoreTest {
         testSubject.appendEvents("test", new SimpleDomainEventStream(domainEvents));
         final Serializer serializer = new Serializer() {
 
+            @SuppressWarnings("unchecked")
             @Override
             public <T> SerializedObject<T> serialize(Object object, Class<T> expectedType) {
                 // this will cause InstantiationError, since it is an interface
@@ -309,7 +315,7 @@ public class JpaEventStoreTest {
             }
 
             @Override
-            public Object deserialize(SerializedObject serializedObject) {
+            public <S, T> T deserialize(SerializedObject<S> serializedObject) {
                 throw new UnsupportedOperationException("Not implemented yet");
             }
 
@@ -320,6 +326,11 @@ public class JpaEventStoreTest {
                 } catch (ClassNotFoundException e) {
                     return null;
                 }
+            }
+
+            @Override
+            public SerializedType typeForClass(Class type) {
+                return new SimpleSerializedType(type.getName(), "");
             }
         };
         final DomainEventMessage<String> stubDomainEvent = new GenericDomainEventMessage<String>(
@@ -484,10 +495,10 @@ public class JpaEventStoreTest {
                                                           "Mock contents", MetaData.emptyInstance())));
         } catch (ConcurrencyException ex) {
             fail("Didn't expect exception to be translated");
-        } catch (PersistenceException ex) {
+        } catch (EntityExistsException ex) {
             assertTrue("Got the right exception, "
-                               + "but the message doesn't seem to mention 'Constraint': " + ex.getMessage(),
-                       ex.getMessage().contains("Constraint"));
+                               + "but the message doesn't seem to mention 'DomainEventEntry': " + ex.getMessage(),
+                       ex.getMessage().contains("DomainEventEntry"));
         }
     }
 

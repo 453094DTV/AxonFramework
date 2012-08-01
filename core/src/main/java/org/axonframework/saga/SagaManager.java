@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2010. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,7 +17,7 @@
 package org.axonframework.saga;
 
 import org.axonframework.domain.EventMessage;
-import org.axonframework.eventhandling.EventListener;
+import org.axonframework.eventhandling.EventListenerProxy;
 
 /**
  * Interface toward the Manager of one or more types of Saga. The SagaManager is an infrastructure object responsible
@@ -30,7 +30,7 @@ import org.axonframework.eventhandling.EventListener;
  * @author Allard Buijze
  * @since 0.7
  */
-public interface SagaManager extends EventListener {
+public interface SagaManager extends EventListenerProxy {
 
     /**
      * Handles the event by passing it to all Saga instances that have an Association Value found in the given event.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,19 +54,26 @@ public class SpringAggregateSnapshotterTest {
 
         testSubject = new SpringAggregateSnapshotter();
         testSubject.setApplicationContext(mockApplicationContext);
-        when(mockApplicationContext.getBeansOfType(AggregateFactory.class))
-                .thenReturn(Collections.<String, AggregateFactory>singletonMap("myFactory", new AggregateFactory() {
-                    @Override
-                    public EventSourcedAggregateRoot createAggregate(Object aggregateIdentifier,
-                                                                     DomainEventMessage firstEvent) {
-                        return new StubAggregate(aggregateIdentifier);
-                    }
+        when(mockApplicationContext.getBeansOfType(AggregateFactory.class)).thenReturn(
+                Collections.<String, AggregateFactory>singletonMap(
+                        "myFactory",
+                        new AbstractAggregateFactory<StubAggregate>() {
+                            @Override
+                            public StubAggregate doCreateAggregate(Object aggregateIdentifier,
+                                                                   DomainEventMessage firstEvent) {
+                                return new StubAggregate(aggregateIdentifier);
+                            }
 
-                    @Override
-                    public String getTypeIdentifier() {
-                        return "stub";
-                    }
-                }));
+                            @Override
+                            public String getTypeIdentifier() {
+                                return "stub";
+                            }
+
+                            @Override
+                            public Class<StubAggregate> getAggregateType() {
+                                return StubAggregate.class;
+                            }
+                        }));
         testSubject.setEventStore(mockEventStore);
         testSubject.afterPropertiesSet();
         mockTransactionManager = mock(PlatformTransactionManager.class);

@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2010. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -86,30 +86,12 @@ public class SimpleCommandBusBeanDefinitionParserTest {
 
     @Test
     public void commandBusElementTrueMBeans() {
-        BeanDefinition beanDefinition = beanFactory.getBeanDefinition("commandBus-mbeans-true");
+        BeanDefinition beanDefinition = beanFactory.getBeanDefinition("commandBus-simple");
         assertNotNull("Bean definition not created", beanDefinition);
         assertEquals("Wrong bean class", SimpleCommandBus.class.getName(), beanDefinition.getBeanClassName());
         assertEquals("wrong amount of constructor arguments"
-                , 1, beanDefinition.getConstructorArgumentValues().getArgumentCount());
-        Object constructorValue =
-                beanDefinition.getConstructorArgumentValues().getArgumentValue(0, Boolean.class).getValue();
-        assertTrue("constructor value is wrong", Boolean.parseBoolean((String) constructorValue));
-        SimpleCommandBus commandBus = beanFactory.getBean("commandBus-mbeans-true", SimpleCommandBus.class);
+                , 0, beanDefinition.getConstructorArgumentValues().getArgumentCount());
+        SimpleCommandBus commandBus = beanFactory.getBean("commandBus-simple", SimpleCommandBus.class);
         assertNotNull(commandBus);
     }
-
-    @Test
-    public void commandBusElementFalseMBeans() {
-        BeanDefinition beanDefinition = beanFactory.getBeanDefinition("commandBus-mbeans-false");
-        assertNotNull("Bean definition not created", beanDefinition);
-        assertEquals("Wrong bean class", SimpleCommandBus.class.getName(), beanDefinition.getBeanClassName());
-        assertEquals("wrong amount of constructor arguments"
-                , 1, beanDefinition.getConstructorArgumentValues().getArgumentCount());
-        Object constructorValue =
-                beanDefinition.getConstructorArgumentValues().getArgumentValue(0, Boolean.class).getValue();
-        assertFalse("constructor value is wrong", Boolean.parseBoolean((String) constructorValue));
-        SimpleCommandBus commandBus = beanFactory.getBean("commandBus-mbeans-false", SimpleCommandBus.class);
-        assertNotNull(commandBus);
-    }
-
 }

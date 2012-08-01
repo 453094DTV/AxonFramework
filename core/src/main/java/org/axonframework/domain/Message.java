@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,7 +84,7 @@ public interface Message<T> extends Serializable {
     Message<T> withMetaData(Map<String, Object> metaData);
 
     /**
-     * Returns a copy of this EventMessage with it MetaData merged with the given <code>metaData</code>. The payload
+     * Returns a copy of this Message with it MetaData merged with the given <code>metaData</code>. The payload
      * remains unchanged.
      *
      * @param metaData The MetaData to merge with

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,23 +33,39 @@ import static java.lang.String.format;
  * @author Allard Buijze
  * @since 1.2
  */
-public class SpringPrototypeAggregateFactory<T extends EventSourcedAggregateRoot>
-        implements AggregateFactory<T>, InitializingBean, ApplicationContextAware, BeanNameAware {
+public class SpringPrototypeAggregateFactory<T extends EventSourcedAggregateRoot> extends AbstractAggregateFactory<T>
+        implements InitializingBean, ApplicationContextAware, BeanNameAware {
 
     private String prototypeBeanName;
     private String typeIdentifier;
     private ApplicationContext applicationContext;
     private String beanName;
+    private Class<?> aggregateType;
 
     @SuppressWarnings({"unchecked"})
     @Override
-    public T createAggregate(Object aggregateIdentifier, DomainEventMessage firstEvent) {
-        return (T) applicationContext.getBean(prototypeBeanName, aggregateIdentifier);
+    public T doCreateAggregate(Object aggregateIdentifier, DomainEventMessage firstEvent) {
+        return (T) applicationContext.getBean(prototypeBeanName);
+    }
+
+    @Override
+    protected T postProcessInstance(T aggregate) {
+        applicationContext.getAutowireCapableBeanFactory().configureBean(aggregate, prototypeBeanName);
+        return aggregate;
     }
 
     @Override
     public String getTypeIdentifier() {
         return typeIdentifier;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public Class<T> getAggregateType() {
+        if (aggregateType == null) {
+            aggregateType = applicationContext.getType(prototypeBeanName);
+        }
+        return (Class<T>) aggregateType;
     }
 
     /**
@@ -93,10 +109,11 @@ public class SpringPrototypeAggregateFactory<T extends EventSourcedAggregateRoot
         if (!applicationContext.isPrototype(prototypeBeanName)) {
             throw new IncompatibleAggregateException(
                     format("Cannot initialize repository '%s'. "
-                                   + "The bean with name '%s' does not have the prototype scope.",
+                                   + "The bean with name '%s' does not have the 'prototype' scope.",
                            beanName, prototypeBeanName));
         }
-        if (!EventSourcedAggregateRoot.class.isAssignableFrom(applicationContext.getType(prototypeBeanName))) {
+        aggregateType = applicationContext.getType(prototypeBeanName);
+        if (!EventSourcedAggregateRoot.class.isAssignableFrom(aggregateType)) {
             throw new IncompatibleAggregateException(
                     format("Cannot initialize repository '%s'. "
                                    + "The bean with name '%s' does not extend from EventSourcingAggregateRoot.",

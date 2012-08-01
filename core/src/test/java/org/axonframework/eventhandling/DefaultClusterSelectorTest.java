@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,9 @@
 
 package org.axonframework.eventhandling;
 
+import org.axonframework.eventhandling.Cluster;
+import org.axonframework.eventhandling.DefaultClusterSelector;
+import org.axonframework.eventhandling.EventListener;
 import org.junit.*;
 
 import static org.junit.Assert.*;
@@ -41,5 +44,12 @@ public class DefaultClusterSelectorTest {
 
         assertSame(cluster1, cluster2);
         assertSame(cluster2, cluster3);
+    }
+
+    @Test
+    public void testProvidedInstanceIsReturned() {
+        Cluster mock = mock(Cluster.class);
+        testSubject = new DefaultClusterSelector(mock);
+        assertSame(mock, testSubject.selectCluster(mock(EventListener.class)));
     }
 }

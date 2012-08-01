@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ package org.axonframework.eventstore.jpa.criteria;
  * @author Allard Buijze
  * @since 2.0
  */
-class Equals extends JpaCriteria {
+public class Equals extends JpaCriteria {
 
     private final JpaProperty propertyName;
     private final Object expression;
@@ -44,12 +44,13 @@ class Equals extends JpaCriteria {
         propertyName.parse(entryKey, whereClause);
         if (expression == null) {
             whereClause.append(" IS NULL");
-        } else if (expression instanceof JpaProperty) {
-            whereClause.append(" = ");
-            ((JpaProperty) expression).parse(entryKey, whereClause);
         } else {
-            whereClause.append(" = ")
-                       .append(parameters.register(expression.toString()));
+            whereClause.append(" = ");
+            if (expression instanceof JpaProperty) {
+                ((JpaProperty) expression).parse(entryKey, whereClause);
+            } else {
+                whereClause.append(parameters.register(expression));
+            }
         }
     }
 }

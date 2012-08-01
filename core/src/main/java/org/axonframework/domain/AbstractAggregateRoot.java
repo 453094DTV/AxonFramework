@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,11 +26,12 @@ import javax.persistence.Version;
  * Very basic implementation of the AggregateRoot interface. It provides the mechanism to keep track of uncommitted
  * events and maintains a version number based on the number of events generated.
  *
+ * @param <I> The type of the identifier of this aggregate
  * @author Allard Buijze
  * @since 0.6
  */
 @MappedSuperclass
-public abstract class AbstractAggregateRoot implements AggregateRoot, Serializable {
+public abstract class AbstractAggregateRoot<I> implements AggregateRoot<I>, Serializable {
 
     private static final long serialVersionUID = 6330592271927197888L;
 
@@ -157,7 +158,13 @@ public abstract class AbstractAggregateRoot implements AggregateRoot, Serializab
 
     private EventContainer getEventContainer() {
         if (eventContainer == null) {
-            eventContainer = new EventContainer(getIdentifier());
+            Object identifier = getIdentifier();
+            if (identifier == null) {
+                throw new AggregateIdentifierNotInitializedException(
+                        "AggregateIdentifier is unknown in [" + getClass().getName() + "]. "
+                                + "Make sure the Aggregate Identifier is initialized before registering events.");
+            }
+            eventContainer = new EventContainer(identifier);
             eventContainer.initializeSequenceNumber(lastEventSequenceNumber);
         }
         return eventContainer;

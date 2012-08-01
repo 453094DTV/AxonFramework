@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.axonframework.eventsourcing;
 
 import net.sf.jsr107cache.Cache;
+import org.axonframework.common.NoCache;
 import org.axonframework.repository.LockingStrategy;
 import org.axonframework.unitofwork.CurrentUnitOfWork;
 import org.axonframework.unitofwork.UnitOfWorkListenerAdapter;
@@ -35,16 +36,14 @@ import org.axonframework.unitofwork.UnitOfWorkListenerAdapter;
  */
 public class CachingEventSourcingRepository<T extends EventSourcedAggregateRoot> extends EventSourcingRepository<T> {
 
-    private static final NoCache DEFAULT_CACHE = new NoCache();
-
-    private Cache cache = DEFAULT_CACHE;
+    private Cache cache = NoCache.INSTANCE;
 
     /**
      * Initializes a repository with a the given <code>aggregateFactory</code> and a pessimistic locking strategy.
      * Optimistic locking is not compatible with caching.
      *
      * @param aggregateFactory The factory for new aggregate instances
-     * @see org.axonframework.repository.LockingRepository#LockingRepository()
+     * @see org.axonframework.repository.LockingRepository#LockingRepository(Class)
      */
     public CachingEventSourcingRepository(AggregateFactory<T> aggregateFactory) {
         super(aggregateFactory, LockingStrategy.PESSIMISTIC);
@@ -111,7 +110,7 @@ public class CachingEventSourcingRepository<T extends EventSourcedAggregateRoot>
 
     private class CacheClearingUnitOfWorkListener extends UnitOfWorkListenerAdapter {
 
-        private Object identifier;
+        private final Object identifier;
 
         public CacheClearingUnitOfWorkListener(Object identifier) {
             this.identifier = identifier;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ import java.util.List;
  * @author Allard Buijze
  * @since 0.6
  */
-class Reporter {
+public class Reporter {
 
     private static final String NEWLINE = System.getProperty("line.separator");
 

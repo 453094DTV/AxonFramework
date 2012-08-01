@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,9 @@
 
 package org.axonframework.test.saga;
 
+import org.axonframework.domain.MetaData;
 import org.axonframework.test.matchers.Matchers;
+import org.axonframework.test.utils.CallbackBehavior;
 import org.hamcrest.CoreMatchers;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
@@ -26,6 +28,8 @@ import java.util.UUID;
 
 import static org.axonframework.test.matchers.Matchers.*;
 import static org.hamcrest.CoreMatchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Allard Buijze
@@ -39,8 +43,7 @@ public class AnnotatedSagaTest {
         AnnotatedSagaTestFixture fixture = new AnnotatedSagaTestFixture(StubSaga.class);
         FixtureExecutionResult validator = fixture
                 .givenAggregate(aggregate1).published(new TriggerSagaStartEvent(aggregate1.toString()),
-                                                      new TriggerExistingSagaEvent(
-                                                              aggregate1.toString()))
+                                                      new TriggerExistingSagaEvent(aggregate1.toString()))
                 .andThenAggregate(aggregate2).published(new TriggerSagaStartEvent(aggregate2.toString()))
                 .whenAggregate(aggregate1).publishes(new TriggerSagaEndEvent(aggregate1.toString()));
 
@@ -99,10 +102,37 @@ public class AnnotatedSagaTest {
     }
 
     @Test
-    public void testFixtureApi_WhenTimeElapses() {
+    public void testFixtureApi_ElapsedTimeBetweenEventsHasEffectOnScheduler() {
+        UUID aggregate1 = UUID.randomUUID();
+        AnnotatedSagaTestFixture fixture = new AnnotatedSagaTestFixture(StubSaga.class);
+        FixtureExecutionResult validator = fixture
+                // event schedules a TriggerEvent after 10 minutes from t0
+                .givenAggregate(aggregate1).published(new TriggerSagaStartEvent(aggregate1.toString()))
+                // time shifts to t0+5
+                .andThenTimeElapses(Duration.standardMinutes(5))
+                // reset event schedules a TriggerEvent after 10 minutes from t0+5
+                .andThenAggregate(aggregate1).published(new ResetTriggerEvent(aggregate1.toString()))
+                // when time shifts to t0+10
+                .whenTimeElapses(Duration.standardMinutes(6));
+
+        validator.expectActiveSagas(1);
+        validator.expectAssociationWith("identifier", aggregate1);
+        // 6 minutes have passed since the 10minute timer was reset,
+        // so expect the timer to be scheduled for 4 minutes (t0 + 15)
+        validator.expectScheduledEventMatching(Duration.standardMinutes(4),
+                                               Matchers.eventWithPayload(CoreMatchers.any(Object.class)));
+        validator.expectNoDispatchedCommands();
+        validator.expectPublishedEvents();
+    }
+
+    @Test
+    public void testFixtureApi_WhenTimeElapses() throws Throwable {
         UUID identifier = UUID.randomUUID();
         UUID identifier2 = UUID.randomUUID();
         AnnotatedSagaTestFixture fixture = new AnnotatedSagaTestFixture(StubSaga.class);
+        CallbackBehavior commandHandler = mock(CallbackBehavior.class);
+        when(commandHandler.handle(eq("Say hi!"), isA(MetaData.class))).thenReturn("Hi again!");
+        fixture.setCallbackBehavior(commandHandler);
 
         fixture.givenAggregate(identifier).published(new TriggerSagaStartEvent(identifier.toString()))
                .andThenAggregate(identifier2).published(new TriggerExistingSagaEvent(identifier2.toString()))
@@ -111,8 +141,10 @@ public class AnnotatedSagaTest {
                .expectAssociationWith("identifier", identifier)
                .expectNoAssociationWith("identifier", identifier2)
                .expectNoScheduledEvents()
-               .expectDispatchedCommandsEqualTo("Say hi!")
+               .expectDispatchedCommandsEqualTo("Say hi!", "Hi again!")
                .expectPublishedEventsMatching(noEvents());
+
+        verify(commandHandler).handle(isA(Object.class), eq(MetaData.emptyInstance()));
     }
 
     @Test

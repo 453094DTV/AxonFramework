@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,11 @@
 package org.axonframework.test.saga;
 
 import org.axonframework.commandhandling.CommandBus;
+import org.axonframework.commandhandling.CommandCallback;
 import org.axonframework.domain.GenericEventMessage;
 import org.axonframework.eventhandling.EventBus;
 import org.axonframework.eventhandling.scheduling.EventScheduler;
+import org.axonframework.eventhandling.scheduling.ScheduleToken;
 import org.axonframework.saga.annotation.AbstractAnnotatedSaga;
 import org.axonframework.saga.annotation.EndSaga;
 import org.axonframework.saga.annotation.SagaEventHandler;
@@ -30,31 +32,34 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.axonframework.commandhandling.GenericCommandMessage.asCommandMessage;
+import static org.junit.Assert.*;
 
 /**
  * @author Allard Buijze
  */
 public class StubSaga extends AbstractAnnotatedSaga {
 
+    private static final int TRIGGER_DURATION_MINUTES = 10;
     private transient CommandBus commandBus;
     private transient EventBus eventBus;
     private transient EventScheduler scheduler;
     private List<Object> handledEvents = new ArrayList<Object>();
+    private ScheduleToken timer;
 
     @StartSaga
     @SagaEventHandler(associationProperty = "identifier")
     public void handleSagaStart(TriggerSagaStartEvent event) {
         handledEvents.add(event);
-        scheduler.schedule(Duration.standardMinutes(10),
-                           new GenericEventMessage<TimerTriggeredEvent>(new TimerTriggeredEvent(event.getIdentifier())));
+        timer = scheduler.schedule(Duration.standardMinutes(TRIGGER_DURATION_MINUTES),
+                                   new GenericEventMessage<TimerTriggeredEvent>(new TimerTriggeredEvent(event.getIdentifier())));
     }
 
     @StartSaga(forceNew = true)
     @SagaEventHandler(associationProperty = "identifier")
     public void handleForcedSagaStart(ForceTriggerSagaStartEvent event) {
         handledEvents.add(event);
-        scheduler.schedule(Duration.standardMinutes(10),
-                           new GenericEventMessage<TimerTriggeredEvent>(new TimerTriggeredEvent(event.getIdentifier())));
+        timer = scheduler.schedule(Duration.standardMinutes(TRIGGER_DURATION_MINUTES),
+                                   new GenericEventMessage<TimerTriggeredEvent>(new TimerTriggeredEvent(event.getIdentifier())));
     }
 
     @SagaEventHandler(associationProperty = "identifier")
@@ -78,7 +83,27 @@ public class StubSaga extends AbstractAnnotatedSaga {
     @SagaEventHandler(associationProperty = "identifier")
     public void handleTriggerEvent(TimerTriggeredEvent event) {
         handledEvents.add(event);
-        commandBus.dispatch(asCommandMessage("Say hi!"));
+        commandBus.dispatch(asCommandMessage("Say hi!"), new CommandCallback<Object>() {
+            @Override
+            public void onSuccess(Object result) {
+                if (result != null) {
+                    commandBus.dispatch(asCommandMessage(result));
+                }
+            }
+
+            @Override
+            public void onFailure(Throwable cause) {
+                fail("Didn't expect exception");
+            }
+        });
+    }
+
+    @SagaEventHandler(associationProperty = "identifier")
+    public void handleResetTriggerEvent(ResetTriggerEvent event) {
+        handledEvents.add(event);
+        scheduler.cancelSchedule(timer);
+        timer = scheduler.schedule(Duration.standardMinutes(TRIGGER_DURATION_MINUTES),
+                                   new GenericEventMessage<TimerTriggeredEvent>(new TimerTriggeredEvent(event.getIdentifier())));
     }
 
     public EventBus getEventBus() {

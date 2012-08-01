@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright (c) 2010-2011. Axon Framework
+  ~ Copyright (c) 2010-2012. Axon Framework
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -15,12 +15,9 @@
   ~ limitations under the License.
   -->
 
-<book version="5.0" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink"
-      xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:svg="http://www.w3.org/2000/svg"
-      xmlns:m="http://www.w3.org/1998/Math/MathML" xmlns:html="http://www.w3.org/1999/xhtml"
-      xmlns:db="http://docbook.org/ns/docbook" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-      xsi:schemaLocation="http://docbook.org/ns/docbook http://docbook.org/xml/5.0/xsd/docbook.xsd
-                http://www.w3.org/1999/xlink http://docbook.org/xml/5.0/xsd/xlink.xsd">
+<book version="5.0" xmlns="http://docbook.org/ns/docbook"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+        >
     <info>
         <title>Reference Guide</title>
         <authorgroup>
@@ -28,9 +25,10 @@
                 <personname>
                     <firstname>Allard</firstname>
                     <surname>Buijze</surname>
+
                 </personname>
                 <affiliation>
-                    <orgname>Dutchworks</orgname>
+                    <orgname>Orange11</orgname>
                 </affiliation>
             </author>
             <othercredit>
@@ -39,9 +37,18 @@
                     <surname>Coenradie</surname>
                 </personname>
                 <affiliation>
-                    <orgname>Dutchworks</orgname>
+                    <orgname>Orange11</orgname>
                 </affiliation>
             </othercredit>
+            <othercredit>
+                <personname>
+                    <firstname>Frank</firstname>
+                    <surname>Versnel</surname>
+                </personname>
+                <affiliation>
+                    <orgname>Orange11</orgname>
+                </affiliation>
+            </othercredit>       
         </authorgroup>
         <mediaobject>
             <imageobject role="fo">

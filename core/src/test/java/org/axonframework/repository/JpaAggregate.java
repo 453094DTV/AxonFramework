@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 
 @Entity
-public class JpaAggregate extends AbstractAggregateRoot {
+public class JpaAggregate extends AbstractAggregateRoot<String> {
 
     private static final long serialVersionUID = -7075224524414732603L;
 
@@ -46,7 +46,7 @@ public class JpaAggregate extends AbstractAggregateRoot {
     }
 
     @Override
-    public Object getIdentifier() {
+    public String getIdentifier() {
         return id;
     }
 

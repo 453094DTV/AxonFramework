@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,9 @@ import org.axonframework.domain.DomainEventMessage;
 
 /**
  * Interface describing objects capable of creating instances of aggregates to be initialized with an event stream.
+ * <p/>
+ * Implementation note: to make sure an implementation handles snapshot events correctly, extends the {@link
+ * AbstractAggregateFactory} instead.
  *
  * @param <T> The type of aggregate this factory creates
  * @author Allard Buijze
@@ -39,7 +42,7 @@ public interface AggregateFactory<T extends EventSourcedAggregateRoot> {
      *                            creation of the aggregate, or a snapshot event
      * @return an aggregate ready for initialization using a DomainEventStream.
      */
-    T createAggregate(Object aggregateIdentifier, DomainEventMessage firstEvent);
+    T createAggregate(Object aggregateIdentifier, DomainEventMessage<?> firstEvent);
 
     /**
      * Returns the type identifier for this aggregate factory. The type identifier is used by the EventStore to
@@ -50,4 +53,12 @@ public interface AggregateFactory<T extends EventSourcedAggregateRoot> {
      * @return the type identifier of the aggregates this repository stores
      */
     String getTypeIdentifier();
+
+    /**
+     * Returns the type of aggregate this factory creates. All instances created by this factory must be an
+     * <code>instanceOf</code> this type.
+     *
+     * @return The type of aggregate created by this factory
+     */
+    Class<T> getAggregateType();
 }

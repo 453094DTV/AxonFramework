@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,10 @@
 package org.axonframework.eventsourcing;
 
 import org.axonframework.domain.DomainEventMessage;
+import org.axonframework.domain.GenericDomainEventMessage;
 import org.axonframework.domain.StubAggregate;
 import org.axonframework.eventsourcing.annotation.AggregateIdentifier;
+import org.axonframework.testutils.MockException;
 import org.junit.*;
 
 import java.util.UUID;
@@ -40,7 +42,7 @@ public class GenericAggregateFactoryTest {
         GenericAggregateFactory<ExceptionThrowingAggregate> factory =
                 new GenericAggregateFactory<ExceptionThrowingAggregate>(ExceptionThrowingAggregate.class);
         try {
-            factory.createAggregate(UUID.randomUUID(), null);
+            factory.createAggregate(UUID.randomUUID(), new GenericDomainEventMessage(new Object(), 0, new Object()));
             fail("Expected IncompatibleAggregateException");
         } catch (IncompatibleAggregateException e) {
             // we got it
@@ -58,10 +60,11 @@ public class GenericAggregateFactoryTest {
         StubAggregate aggregate = new StubAggregate("stubId");
         aggregate.doSomething();
         aggregate.commitEvents();
-        AggregateSnapshot<StubAggregate> snapshot = new AggregateSnapshot<StubAggregate>(aggregate);
+        DomainEventMessage<StubAggregate> snapshotMessage = new GenericDomainEventMessage<StubAggregate>(
+                aggregate.getIdentifier(), aggregate.getVersion(), aggregate);
         GenericAggregateFactory<StubAggregate> factory = new GenericAggregateFactory<StubAggregate>(StubAggregate.class);
         assertEquals("StubAggregate", factory.getTypeIdentifier());
-        assertSame(aggregate, factory.createAggregate(aggregate.getIdentifier(), snapshot));
+        assertSame(aggregate, factory.createAggregate(aggregate.getIdentifier(), snapshotMessage));
     }
 
     private static class UnsuitableAggregate extends AbstractEventSourcedAggregateRoot {
@@ -71,10 +74,6 @@ public class GenericAggregateFactoryTest {
 
         @Override
         protected void handle(DomainEventMessage event) {
-        }
-
-        @Override
-        protected void initialize(Object aggregateIdentifier) {
         }
 
         @Override
@@ -90,16 +89,11 @@ public class GenericAggregateFactoryTest {
         private String identifier;
 
         private ExceptionThrowingAggregate() {
-            throw new RuntimeException("Mock");
+            throw new MockException();
         }
 
         @Override
         protected void handle(DomainEventMessage event) {
-        }
-
-        @Override
-        protected void initialize(Object aggregateIdentifier) {
-            identifier = (String) aggregateIdentifier;
         }
 
         @Override

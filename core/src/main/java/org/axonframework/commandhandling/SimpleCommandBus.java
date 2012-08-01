@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package org.axonframework.commandhandling;
 
-import org.axonframework.monitoring.jmx.JmxConfiguration;
+import org.axonframework.monitoring.MonitorRegistry;
 import org.axonframework.unitofwork.DefaultUnitOfWorkFactory;
 import org.axonframework.unitofwork.UnitOfWork;
 import org.axonframework.unitofwork.UnitOfWorkFactory;
@@ -54,21 +54,10 @@ public class SimpleCommandBus implements CommandBus {
     private RollbackConfiguration rollbackConfiguration = new RollbackOnAllExceptionsConfiguration();
 
     /**
-     * Initializes the SimpleCommandBus and registers the mbeans for management information.
+     * Initializes the SimpleCommandBus.
      */
     public SimpleCommandBus() {
-        this(true);
-    }
-
-    /**
-     * Initiates the SimpleCommandBus and makes the registration of mbeans for management information optional.
-     *
-     * @param registerMBeans true to register the mbeans, false for not registering them.
-     */
-    public SimpleCommandBus(boolean registerMBeans) {
-        if (registerMBeans) {
-            JmxConfiguration.getInstance().registerMBean(statistics, getClass());
-        }
+        MonitorRegistry.registerMonitoringBean(statistics, SimpleCommandBus.class);
     }
 
     @SuppressWarnings({"ThrowableResultOfMethodCallIgnored"})
@@ -108,6 +97,7 @@ public class SimpleCommandBus implements CommandBus {
     }
 
     private Object doDispatch(CommandMessage<?> command, CommandHandler commandHandler) throws Throwable {
+        logger.debug("Dispatching command [{}]", command.getPayload());
         statistics.recordReceivedCommand();
         UnitOfWork unitOfWork = unitOfWorkFactory.createUnitOfWork();
         InterceptorChain chain = new DefaultInterceptorChain(command, unitOfWork, commandHandler, interceptors);

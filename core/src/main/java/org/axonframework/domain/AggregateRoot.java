@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,18 +19,19 @@ package org.axonframework.domain;
 /**
  * Interface defining a contract for entities that represent the aggregate root.
  *
+ * @param <I> The type of the identifier of this aggregate
  * @author Allard Buijze
  * @see org.axonframework.domain.AbstractAggregateRoot
  * @since 0.1
  */
-public interface AggregateRoot {
+public interface AggregateRoot<I> {
 
     /**
      * Returns the identifier of this aggregate.
      *
      * @return the identifier of this aggregate
      */
-    Object getIdentifier();
+    I getIdentifier();
 
     /**
      * Clears the events currently marked as "uncommitted" and clears any known EventRegistrationCallbacks (see {@link

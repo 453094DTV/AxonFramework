@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,5 +96,31 @@ public class SagaEntry {
      */
     public byte[] getSerializedSaga() {
         return serializedSaga; //NOSONAR
+    }
+
+    /**
+     * Returns the identifier of the saga contained in this entry
+     *
+     * @return the identifier of the saga contained in this entry
+     */
+    public String getSagaId() {
+        return sagaId;
+    }
+
+    /**
+     * Returns the revision of the serialized saga
+     *
+     * @return the revision of the serialized saga
+     */
+    public String getRevision() {
+        return revision;
+    }
+
+    /**
+     * Returns the type identifier of the serialized saga
+     * @return the type identifier of the serialized saga
+     */
+    public String getSagaType() {
+        return sagaType;
     }
 }

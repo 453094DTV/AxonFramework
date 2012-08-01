@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import org.axonframework.domain.AggregateRoot;
  * @author Allard Buijze
  * @since 0.3
  */
-interface LockManager {
+public interface LockManager {
 
     /**
      * Make sure that the current thread holds a valid lock for the given aggregate.

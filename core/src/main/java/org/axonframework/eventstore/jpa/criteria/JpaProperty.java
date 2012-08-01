@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import org.axonframework.eventstore.management.Property;
  * @author Allard Buijze
  * @since 2.0
  */
-class JpaProperty implements Property {
+public class JpaProperty implements Property {
 
     private final String propertyName;
 
@@ -70,12 +70,12 @@ class JpaProperty implements Property {
 
     @Override
     public Criteria in(Object expression) {
-        return new In(this, expression);
+        return new CollectionOperator(this, "IN", expression);
     }
 
     @Override
     public Criteria notIn(Object expression) {
-        return new NotIn(this, expression);
+        return new CollectionOperator(this, "NOT IN", expression);
     }
 
     /**

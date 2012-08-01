@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import org.axonframework.saga.annotation.AbstractAnnotatedSaga;
 import org.axonframework.saga.repository.inmemory.InMemorySagaRepository;
 import org.axonframework.test.AxonAssertionError;
 
-import java.util.Collections;
 import java.util.Set;
 
 import static java.lang.String.format;
@@ -32,7 +31,7 @@ import static java.lang.String.format;
  * @author Allard Buijze
  * @since 1.1
  */
-class RepositoryContentValidator {
+public class RepositoryContentValidator {
 
     private final InMemorySagaRepository sagaRepository;
     private final Class<? extends AbstractAnnotatedSaga> sagaType;
@@ -58,8 +57,7 @@ class RepositoryContentValidator {
      */
     public void assertAssociationPresent(String associationKey, String associationValue) {
         Set<? extends AbstractAnnotatedSaga> associatedSagas =
-                sagaRepository.find(sagaType, Collections.singleton(new AssociationValue(associationKey,
-                                                                                         associationValue)));
+                sagaRepository.find(sagaType, new AssociationValue(associationKey, associationValue));
         if (associatedSagas.isEmpty()) {
             throw new AxonAssertionError(format(
                     "Expected a saga to be associated with key:<%s> value:<%s>, but found <none>",
@@ -77,8 +75,7 @@ class RepositoryContentValidator {
      */
     public void assertNoAssociationPresent(String associationKey, String associationValue) {
         Set<? extends AbstractAnnotatedSaga> associatedSagas =
-                sagaRepository.find(sagaType, Collections.singleton(new AssociationValue(associationKey,
-                                                                                         associationValue)));
+                sagaRepository.find(sagaType, new AssociationValue(associationKey, associationValue));
         if (!associatedSagas.isEmpty()) {
             throw new AxonAssertionError(format(
                     "Expected a saga to be associated with key:<%s> value:<%s>, but found <%s>",

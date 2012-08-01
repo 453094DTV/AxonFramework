@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @see ConcurrencyException
  * @since 0.3
  */
-class OptimisticLockManager implements LockManager {
+public class OptimisticLockManager implements LockManager {
 
     private final ConcurrentHashMap<Object, OptimisticLock> locks = new ConcurrentHashMap<Object, OptimisticLock>();
 

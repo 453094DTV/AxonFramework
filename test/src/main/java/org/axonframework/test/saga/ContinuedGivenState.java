@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,24 @@ public interface ContinuedGivenState {
      * @return an object that allows registration of the actual events to send
      */
     GivenAggregateEventPublisher andThenAggregate(Object aggregateIdentifier);
+
+    /**
+     * Simulate time shifts in the current given state. This can be useful when the time between given events is of
+     * importance.
+     *
+     * @param elapsedTime The amount of time that will elapse
+     * @return an object that allows registration of the actual events to send
+     */
+    ContinuedGivenState andThenTimeElapses(Duration elapsedTime);
+
+    /**
+     * Simulate time shifts in the current given state. This can be useful when the time between given events is of
+     * importance.
+     *
+     * @param newDateTime The time to advance the clock to
+     * @return an object that allows registration of the actual events to send
+     */
+    ContinuedGivenState andThenTimeAdvancesTo(DateTime newDateTime);
 
     /**
      * Indicates that the given <code>event</code> has been published in the past. This event is sent to the associated

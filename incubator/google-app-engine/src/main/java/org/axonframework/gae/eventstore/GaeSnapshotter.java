@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ import com.google.appengine.api.taskqueue.QueueFactory;
 import com.google.appengine.api.taskqueue.TaskOptions;
 import org.axonframework.domain.DomainEventMessage;
 import org.axonframework.domain.DomainEventStream;
+import org.axonframework.domain.GenericDomainEventMessage;
 import org.axonframework.eventsourcing.AggregateFactory;
-import org.axonframework.eventsourcing.AggregateSnapshot;
 import org.axonframework.eventsourcing.EventSourcedAggregateRoot;
 import org.axonframework.eventsourcing.Snapshotter;
 import org.axonframework.eventstore.SnapshotEventStore;
@@ -92,9 +92,10 @@ public class GaeSnapshotter implements Snapshotter, InitializingBean, Applicatio
         Object aggregateIdentifier = firstEvent.getAggregateIdentifier();
 
         EventSourcedAggregateRoot aggregate = aggregateFactory.createAggregate(aggregateIdentifier, firstEvent);
-        aggregate.initializeState(aggregateIdentifier, eventStream);
+        aggregate.initializeState(eventStream);
 
-        return new AggregateSnapshot<EventSourcedAggregateRoot>(aggregate);
+        return new GenericDomainEventMessage<EventSourcedAggregateRoot>(
+                aggregate.getIdentifier(), aggregate.getVersion(), aggregate);
     }
 
     @Override

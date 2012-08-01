@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,10 +27,10 @@ import org.axonframework.saga.Saga;
  * @author Allard Buijze
  * @since 2.0
  */
-class AsyncSagaProcessingEvent {
+public class AsyncSagaProcessingEvent {
 
     private EventMessage publishedEvent;
-    private HandlerConfiguration handler;
+    private SagaMethodMessageHandler handler;
     private Class<? extends AbstractAnnotatedSaga> sagaType;
     private AbstractAnnotatedSaga newSaga;
     private final AsyncSagaCreationElector elector = new AsyncSagaCreationElector();
@@ -58,7 +58,7 @@ class AsyncSagaProcessingEvent {
      *
      * @return the handler that can process the published Event
      */
-    public HandlerConfiguration getHandler() {
+    public SagaMethodMessageHandler getHandler() {
         return handler;
     }
 
@@ -67,7 +67,7 @@ class AsyncSagaProcessingEvent {
      *
      * @param handler the handler that can process the published Event
      */
-    public void setHandler(HandlerConfiguration handler) {
+    public void setHandler(SagaMethodMessageHandler handler) {
         this.handler = handler;
     }
 
@@ -80,7 +80,7 @@ class AsyncSagaProcessingEvent {
         if (handler == null) {
             return null;
         }
-        return handler.getAssociationValue();
+        return handler.getAssociationValue(publishedEvent);
     }
 
     /**

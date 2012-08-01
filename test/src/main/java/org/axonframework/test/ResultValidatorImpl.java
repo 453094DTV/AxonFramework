@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ import static org.hamcrest.CoreMatchers.*;
  * @author Allard Buijze
  * @since 0.7
  */
-class ResultValidatorImpl implements ResultValidator, CommandCallback<Object> {
+public class ResultValidatorImpl implements ResultValidator, CommandCallback<Object> {
 
     private final Collection<DomainEventMessage> storedEvents;
     private final Collection<EventMessage> publishedEvents;

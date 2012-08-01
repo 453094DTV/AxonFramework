@@ -1,8 +1,26 @@
+/*
+ * Copyright (c) 2010-2012. Axon Framework
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.axonframework.common.annotation;
 
 import java.lang.annotation.Annotation;
 import java.util.Iterator;
+import java.util.List;
 import java.util.ServiceLoader;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Abstract Factory that provides access to all ParameterResolverFactory implementations.
@@ -27,7 +45,24 @@ public abstract class ParameterResolverFactory {
     private static final ServiceLoader<ParameterResolverFactory> FACTORY_LOADER =
             ServiceLoader.load(ParameterResolverFactory.class);
 
+    private static final List<ParameterResolverFactory> RESOLVERS = new CopyOnWriteArrayList<ParameterResolverFactory>();
     private static final DefaultParameterResolverFactory DEFAULT_FACTORY = new DefaultParameterResolverFactory();
+
+    static {
+        for (ParameterResolverFactory factory : FACTORY_LOADER) {
+            RESOLVERS.add(factory);
+        }
+    }
+
+    /**
+     * Registers a ParameterResolverFactory at runtime. Annotated handlers that have already been inspected will not be
+     * able to use the newly added factory.
+     *
+     * @param factory The factory to register
+     */
+    public static void registerFactory(ParameterResolverFactory factory) {
+        RESOLVERS.add(factory);
+    }
 
     /**
      * Iterates over all known ParameterResolverFactory implementations to create a ParameterResolver instance for the
@@ -38,14 +73,19 @@ public abstract class ParameterResolverFactory {
      * @param memberAnnotations    annotations placed on the member (e.g. method)
      * @param parameterType        the parameter type to find a resolver for
      * @param parameterAnnotations annotations places on the parameter
+     * @param isPayloadParameter   whether the parameter to resolve represents a payload parameter
      * @return a suitable ParameterResolver, or <code>null</code> if none is found
      */
     public static ParameterResolver findParameterResolver(Annotation[] memberAnnotations, Class<?> parameterType,
-                                                          Annotation[] parameterAnnotations) {
+                                                          Annotation[] parameterAnnotations,
+                                                          boolean isPayloadParameter) {
         ParameterResolver resolver = null;
-        Iterator<ParameterResolverFactory> factories = FACTORY_LOADER.iterator();
+        Iterator<ParameterResolverFactory> factories = RESOLVERS.iterator();
         while (resolver == null && factories.hasNext()) {
-            resolver = factories.next().createInstance(memberAnnotations, parameterType, parameterAnnotations);
+            final ParameterResolverFactory factory = factories.next();
+            if (!isPayloadParameter || factory.supportsPayloadResolution()) {
+                resolver = factory.createInstance(memberAnnotations, parameterType, parameterAnnotations);
+            }
         }
         if (resolver == null) {
             resolver = DEFAULT_FACTORY.createInstance(memberAnnotations, parameterType, parameterAnnotations);
@@ -63,6 +103,13 @@ public abstract class ParameterResolverFactory {
     public static ParameterResolver createPayloadResolver(Class<?> parameterType) {
         return DEFAULT_FACTORY.newPayloadResolver(parameterType);
     }
+
+    /**
+     * Indicates whether this resolver may be used to resolve the payload parameter of an annotated handler method.
+     *
+     * @return whether this factory provides Parameter Resolvers that support payload parameters
+     */
+    public abstract boolean supportsPayloadResolution();
 
     /**
      * If available, creates a ParameterResolver instance that can provide a parameter of type

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,15 +43,9 @@ public abstract class AbstractSagaRepository implements SagaRepository {
     private final SagaCache sagaCache = new SagaCache();
 
     @Override
-    public <T extends Saga> Set<T> find(Class<T> type, Set<AssociationValue> associationValues) {
-        Set<String> sagaIdentifiers = new HashSet<String>();
+    public <T extends Saga> Set<T> find(Class<T> type, AssociationValue associationValue) {
+        Set<String> sagaIdentifiers = associationValueMap.findSagas(typeOf(type), associationValue);
         Set<T> result = new HashSet<T>();
-        for (AssociationValue associationValue : associationValues) {
-            Set<String> identifiers = associationValueMap.findSagas(typeOf(type), associationValue);
-            if (identifiers != null) {
-                sagaIdentifiers.addAll(identifiers);
-            }
-        }
         if (!sagaIdentifiers.isEmpty()) {
             for (String sagaId : sagaIdentifiers) {
                 T cachedSaga = load(type, sagaId);
@@ -105,9 +99,14 @@ public abstract class AbstractSagaRepository implements SagaRepository {
         return typeOf(saga.getClass());
     }
 
-    private String typeOf(Class<? extends Saga> sagaClass) {
-        return sagaClass.getSimpleName();
-    }
+    /**
+     * Returns the type identifier to use for the given <code>sagaClass</code>. This information is typically provided
+     * by the Serializer, if the repository stores serialized instances.
+     *
+     * @param sagaClass The type of saga to get the type identifier for.
+     * @return The type identifier to use for the given sagaClass
+     */
+    protected abstract String typeOf(Class<? extends Saga> sagaClass);
 
     /**
      * Returns <code>true</code> if the two parameters point to exactly the same object instance. This method will

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.axonframework.commandhandling.callbacks;
 
+import org.axonframework.testutils.MockException;
 import org.junit.*;
 
 import java.util.concurrent.ExecutionException;
@@ -72,7 +73,7 @@ public class FutureCallbackTest {
         });
         t.start();
         assertTrue(t.isAlive());
-        RuntimeException exception = new RuntimeException("Mock");
+        RuntimeException exception = new MockException();
         testSubject.onFailure(exception);
         t.join(THREAD_JOIN_TIMEOUT);
         assertTrue(resultFromParallelThread instanceof ExecutionException);

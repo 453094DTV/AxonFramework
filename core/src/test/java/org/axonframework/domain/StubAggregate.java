@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,12 +46,8 @@ public class StubAggregate extends AbstractEventSourcedAggregateRoot {
 
     @Override
     protected void handle(DomainEventMessage event) {
+        identifier = event.getAggregateIdentifier();
         invocationCount++;
-    }
-
-    @Override
-    protected void initialize(Object aggregateIdentifier) {
-        identifier = aggregateIdentifier;
     }
 
     public int getInvocationCount() {

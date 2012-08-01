@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Log4jConfigurer;
 
 import java.util.ArrayList;
@@ -55,7 +54,6 @@ import static org.junit.Assert.*;
 @ContextConfiguration(locations = {
         "/META-INF/spring/infrastructure-context.xml",
         "/META-INF/spring/application-context-optimistic.xml"})
-@Transactional
 public class ConcurrentModificationTest_OptimisticLocking implements Thread.UncaughtExceptionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(ConcurrentModificationTest_OptimisticLocking.class);
@@ -85,7 +83,7 @@ public class ConcurrentModificationTest_OptimisticLocking implements Thread.Unca
      *
      * @throws InterruptedException
      */
-    @Test
+    @Test(timeout = 30000)
     public void testConcurrentModifications() throws Exception {
         Log4jConfigurer.initLogging("classpath:log4j_silenced.properties");
         assertFalse("Something is wrong", CurrentUnitOfWork.isStarted());

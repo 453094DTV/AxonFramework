@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2010. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,8 +18,6 @@ package org.axonframework.saga;
 
 import org.axonframework.domain.EventMessage;
 
-import java.util.Set;
-
 /**
  * Interface describing the mechanism that resolves Association Values from events. The Association Values are used to
  * find Saga's potentially interested in this Event.
@@ -30,11 +28,10 @@ import java.util.Set;
 public interface AssociationValueResolver {
 
     /**
-     * Extracts the Association Values from the given <code>event</code>. A single Event may result in 0 or more
-     * Association Values. Will never return <code>null</code>.
+     * Extracts an Association Value from the given <code>event</code>.
      *
-     * @param event The event to extract Association Values from
-     * @return The Association Values extracted from the Event. Never <code>null</code>.
+     * @param event The event to extract Association Value from
+     * @return The Association Value extracted from the Event, or <code>null</code> if none found.
      */
-    Set<AssociationValue> extractAssociationValue(EventMessage event);
+    AssociationValue extractAssociationValue(EventMessage event);
 }

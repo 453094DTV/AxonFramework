@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,8 +47,12 @@ public interface EventBus {
     /**
      * Subscribe the given <code>eventListener</code> to this bus. When subscribed, it will receive all events
      * published to this bus.
+     * <p/>
+     * If the given <code>eventListener</code> is already subscribed, nothing happens.
      *
      * @param eventListener The event listener to subscribe
+     * @throws EventListenerSubscriptionFailedException
+     *          if the listener could not be subscribed
      */
     void subscribe(EventListener eventListener);
 

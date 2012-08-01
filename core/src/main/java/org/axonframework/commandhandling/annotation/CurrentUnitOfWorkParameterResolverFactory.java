@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,5 +50,10 @@ public class CurrentUnitOfWorkParameterResolverFactory extends ParameterResolver
     @Override
     public boolean matches(Message message) {
         return CommandMessage.class.isInstance(message) && CurrentUnitOfWork.isStarted();
+    }
+
+    @Override
+    public boolean supportsPayloadResolution() {
+        return false;
     }
 }

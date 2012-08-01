@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import org.axonframework.domain.EventMessage;
 import org.axonframework.eventhandling.EventBus;
 import org.axonframework.unitofwork.CurrentUnitOfWork;
 import org.axonframework.unitofwork.UnitOfWorkListenerAdapter;
-import org.axonframework.util.lock.IdentifierBasedLock;
+import org.axonframework.common.lock.IdentifierBasedLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,7 +91,7 @@ public abstract class AbstractSagaManager implements SagaManager, Subscribable {
             if (suppressExceptions) {
                 logger.error(format("An exception occurred while a Saga [%s] was handling an Event [%s]:",
                                     saga.getClass().getSimpleName(),
-                                    event.getClass().getSimpleName()),
+                                    event.getPayloadType().getSimpleName()),
                              e);
             } else {
                 throw e;
@@ -188,8 +188,6 @@ public abstract class AbstractSagaManager implements SagaManager, Subscribable {
         @Override
         public void run() {
             if (synchronizeSagaAccess) {
-                //Saga instance is unique (no two instances will exist inside a JVM with the same identifier)
-                //noinspection SynchronizationOnLocalVariableOrMethodParameter
                 lock.obtainLock(saga.getSagaIdentifier());
                 try {
                     invokeSagaHandler(event, saga);

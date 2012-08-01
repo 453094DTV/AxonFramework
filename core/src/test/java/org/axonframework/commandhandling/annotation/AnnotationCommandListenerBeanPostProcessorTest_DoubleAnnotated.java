@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import org.axonframework.commandhandling.CommandBus;
 import org.axonframework.commandhandling.CommandHandler;
 import org.axonframework.commandhandling.GenericCommandMessage;
 import org.axonframework.commandhandling.callbacks.VoidCallback;
+import org.axonframework.common.Subscribable;
 import org.junit.*;
 import org.junit.runner.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,7 +71,8 @@ public class AnnotationCommandListenerBeanPostProcessorTest_DoubleAnnotated {
         SecurityContextHolder.setContext(new SecurityContext() {
             @Override
             public Authentication getAuthentication() {
-                return new TestingAuthenticationToken("Princpipal", "Credentials", "ROLE_ADMINISTRATOR");
+                return new TestingAuthenticationToken("Princpipal", "Credentials",
+                                                      "ROLE_ADMINISTRATOR", "ROLE_INTERFACE");
             }
 
             @Override
@@ -84,8 +86,10 @@ public class AnnotationCommandListenerBeanPostProcessorTest_DoubleAnnotated {
         verify(mockTransactionManager).commit(isA(TransactionStatus.class));
         assertEquals(1, transactionalHandler.getInvocations());
 
-        assertTrue("Bean doesn't implemment EventListener",
+        assertTrue("Bean doesn't implement EventListener",
                    org.axonframework.commandhandling.CommandHandler.class.isInstance(transactionalHandler));
+        assertTrue("Bean doesn't implement Subscribable",
+                   Subscribable.class.isInstance(transactionalHandler));
         ((CommandHandler<Integer>) transactionalHandler).handle(GenericCommandMessage.asCommandMessage(12), null);
         assertEquals(2, transactionalHandler.getInvocations());
 

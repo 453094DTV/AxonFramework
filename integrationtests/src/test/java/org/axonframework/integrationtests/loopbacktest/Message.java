@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import java.util.UUID;
 /**
  * @author Allard Buijze
  */
-public class Message extends AbstractAnnotatedAggregateRoot {
+public class Message extends AbstractAnnotatedAggregateRoot<UUID> {
 
     @AggregateIdentifier
     private UUID identifier;

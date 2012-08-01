@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright (c) 2010-2011. Axon Framework
+  ~ Copyright (c) 2010-2012. Axon Framework
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -25,12 +25,12 @@
                            http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-3.1.xsd">
 
     <axon:annotation-config event-bus="eventBus" command-bus="commandBus"/>
-    <security:global-method-security secured-annotations="enabled"/>
+    <security:global-method-security proxy-target-class="true" secured-annotations="enabled"/>
 
     <axon:event-bus id="eventBus"/>
     <axon:command-bus id="commandBus"/>
 
-    <bean class="org.axonframework.eventhandling.annotation.postprocessor.TransactionalListener"/>
+    <bean class="org.axonframework.eventhandling.annotation.TransactionalListener"/>
     <bean class="org.axonframework.commandhandling.annotation.TransactionalCommandHandler"/>
 
     <bean id="transactionManager" class="org.axonframework.testutils.MockitoMockFactoryBean">

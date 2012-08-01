@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,8 +71,7 @@ public class EventContainer implements Serializable {
      * @return the DomainEventMessage added to the container
      */
     public <T> DomainEventMessage<T> addEvent(MetaData metaData, T payload) {
-        DomainEventMessage<T> event = new GenericDomainEventMessage<T>(aggregateIdentifier,
-                                                                       newSequenceNumber(),
+        DomainEventMessage<T> event = new GenericDomainEventMessage<T>(aggregateIdentifier, newSequenceNumber(),
                                                                        payload, metaData);
         if (registrationCallbacks != null) {
             for (EventRegistrationCallback callback : registrationCallbacks) {

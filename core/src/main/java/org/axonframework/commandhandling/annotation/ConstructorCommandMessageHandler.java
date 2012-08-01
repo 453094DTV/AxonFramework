@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ import static org.axonframework.common.ReflectionUtils.ensureAccessible;
  * @author Allard Buijze
  * @since 1.2
  */
-final class ConstructorCommandMessageHandler<T extends AggregateRoot> extends AbstractMessageHandler {
+public final class ConstructorCommandMessageHandler<T extends AggregateRoot> extends AbstractMessageHandler {
 
     private final Constructor<T> constructor;
 

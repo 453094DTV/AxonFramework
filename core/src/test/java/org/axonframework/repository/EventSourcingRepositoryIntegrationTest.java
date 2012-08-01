@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ import org.axonframework.domain.DomainEventStream;
 import org.axonframework.domain.SimpleDomainEventStream;
 import org.axonframework.domain.StubDomainEvent;
 import org.axonframework.eventhandling.EventBus;
+import org.axonframework.eventsourcing.AbstractAggregateFactory;
 import org.axonframework.eventsourcing.AbstractEventSourcedAggregateRoot;
-import org.axonframework.eventsourcing.AggregateFactory;
 import org.axonframework.eventsourcing.EventSourcingRepository;
 import org.axonframework.eventstore.EventStore;
 import org.axonframework.unitofwork.DefaultUnitOfWork;
@@ -72,7 +72,8 @@ public class EventSourcingRepositoryIntegrationTest implements Thread.UncaughtEx
                    getSuccessfulModifications() >= 1);
         int expectedEventCount = getSuccessfulModifications() * 2;
         assertTrue("It seems that no events have been published at all", lastSequenceNumber >= 0);
-        verify(mockEventBus, times(expectedEventCount)).publish(isA(DomainEventMessage.class));
+        // we publish two events at the time
+        verify(mockEventBus, times(expectedEventCount / 2)).publish(isA(DomainEventMessage.class), isA(DomainEventMessage.class));
     }
 
     private int getSuccessfulModifications() {
@@ -185,11 +186,7 @@ public class EventSourcingRepositoryIntegrationTest implements Thread.UncaughtEx
 
         @Override
         protected void handle(DomainEventMessage event) {
-        }
-
-        @Override
-        protected void initialize(Object aggregateIdentifier) {
-            identifier = (UUID) aggregateIdentifier;
+            identifier = (UUID) event.getAggregateIdentifier();
         }
 
         @Override
@@ -198,10 +195,10 @@ public class EventSourcingRepositoryIntegrationTest implements Thread.UncaughtEx
         }
     }
 
-    private static class SimpleAggregateFactory implements AggregateFactory<SimpleAggregateRoot> {
+    private static class SimpleAggregateFactory extends AbstractAggregateFactory<SimpleAggregateRoot> {
 
         @Override
-        public SimpleAggregateRoot createAggregate(Object aggregateIdentifier,
+        public SimpleAggregateRoot doCreateAggregate(Object aggregateIdentifier,
                                                    DomainEventMessage firstEvent) {
             return new SimpleAggregateRoot((UUID) aggregateIdentifier);
         }
@@ -209,6 +206,11 @@ public class EventSourcingRepositoryIntegrationTest implements Thread.UncaughtEx
         @Override
         public String getTypeIdentifier() {
             return "SimpleAggregateRoot";
+        }
+
+        @Override
+        public Class<SimpleAggregateRoot> getAggregateType() {
+            return SimpleAggregateRoot.class;
         }
     }
 

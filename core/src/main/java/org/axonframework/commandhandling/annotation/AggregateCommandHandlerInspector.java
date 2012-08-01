@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,8 @@
 
 package org.axonframework.commandhandling.annotation;
 
-import org.axonframework.common.annotation.AbstractHandlerInspector;
+import org.axonframework.common.annotation.MethodMessageHandlerInspector;
+import org.axonframework.common.annotation.MethodMessageHandler;
 import org.axonframework.domain.AggregateRoot;
 
 import java.lang.reflect.Constructor;
@@ -31,20 +32,21 @@ import java.util.List;
  * @author Allard Buijze
  * @since 1.2
  */
-public class AggregateCommandHandlerInspector<T extends AggregateRoot> extends AbstractHandlerInspector {
+public class AggregateCommandHandlerInspector<T extends AggregateRoot> {
 
     private final List<ConstructorCommandMessageHandler<T>> constructorCommandHandlers =
             new LinkedList<ConstructorCommandMessageHandler<T>>();
+    private final MethodMessageHandlerInspector inspector;
 
     /**
-     * Initialize an AbstractHandlerInspector, where the given <code>annotationType</code> is used to annotate the
+     * Initialize an MethodMessageHandlerInspector, where the given <code>annotationType</code> is used to annotate the
      * Event Handler methods.
      *
      * @param targetType The targetType to inspect methods on
      */
     @SuppressWarnings({"unchecked"})
     protected AggregateCommandHandlerInspector(Class<T> targetType) {
-        super(targetType, CommandHandler.class);
+        inspector = MethodMessageHandlerInspector.getInstance(targetType, CommandHandler.class);
         for (Constructor constructor : targetType.getConstructors()) {
             if (constructor.isAnnotationPresent(CommandHandler.class)) {
                 constructorCommandHandlers.add(ConstructorCommandMessageHandler.forConstructor(constructor));
@@ -59,5 +61,14 @@ public class AggregateCommandHandlerInspector<T extends AggregateRoot> extends A
      */
     public List<ConstructorCommandMessageHandler<T>> getConstructorHandlers() {
         return constructorCommandHandlers;
+    }
+
+    /**
+     * Returns the list of handlers found on target type.
+     *
+     * @return the list of handlers found on target type
+     */
+    public List<MethodMessageHandler> getHandlers() {
+        return inspector.getHandlers();
     }
 }

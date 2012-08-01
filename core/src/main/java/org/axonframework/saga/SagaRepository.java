@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ public interface SagaRepository {
      *         return
      *         <code>null</code>.
      */
-    <T extends Saga> Set<T> find(Class<T> type, Set<AssociationValue> associationValue);
+    <T extends Saga> Set<T> find(Class<T> type, AssociationValue associationValue);
 
     /**
      * Loads a known Saga instance by its unique identifier. Returned Sagas must be {@link #commit(Saga) committed}

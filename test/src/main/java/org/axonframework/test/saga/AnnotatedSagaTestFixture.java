@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import org.axonframework.saga.annotation.AnnotatedSagaManager;
 import org.axonframework.saga.repository.inmemory.InMemorySagaRepository;
 import org.axonframework.test.eventscheduler.StubEventScheduler;
 import org.axonframework.test.utils.AutowiredResourceInjector;
+import org.axonframework.test.utils.CallbackBehavior;
 import org.axonframework.test.utils.RecordingCommandBus;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
@@ -52,6 +53,7 @@ public class AnnotatedSagaTestFixture implements FixtureConfiguration, Continued
     private Map<Object, AggregateEventPublisherImpl> aggregatePublishers =
             new HashMap<Object, AggregateEventPublisherImpl>();
     private FixtureExecutionResultImpl fixtureExecutionResult;
+    private final RecordingCommandBus commandBus;
 
     /**
      * Creates an instance of the AnnotatedSagaTestFixture to test sagas of the given <code>sagaType</code>.
@@ -63,13 +65,13 @@ public class AnnotatedSagaTestFixture implements FixtureConfiguration, Continued
         eventScheduler = new StubEventScheduler();
         GenericSagaFactory genericSagaFactory = new GenericSagaFactory();
         genericSagaFactory.setResourceInjector(new AutowiredResourceInjector(registeredResources));
-        EventBus eventBus = new SimpleEventBus(false);
+        EventBus eventBus = new SimpleEventBus();
         InMemorySagaRepository sagaRepository = new InMemorySagaRepository();
         sagaManager = new AnnotatedSagaManager(sagaRepository, genericSagaFactory, eventBus, sagaType);
         sagaManager.setSuppressExceptions(false);
 
         registeredResources.add(eventBus);
-        RecordingCommandBus commandBus = new RecordingCommandBus();
+        commandBus = new RecordingCommandBus();
         registeredResources.add(commandBus);
         registeredResources.add(eventScheduler);
         fixtureExecutionResult = new FixtureExecutionResultImpl(sagaRepository, eventScheduler, eventBus, commandBus,
@@ -100,6 +102,11 @@ public class AnnotatedSagaTestFixture implements FixtureConfiguration, Continued
     }
 
     @Override
+    public void setCallbackBehavior(CallbackBehavior callbackBehavior) {
+        commandBus.setCallbackBehavior(callbackBehavior);
+    }
+
+    @Override
     public GivenAggregateEventPublisher givenAggregate(Object aggregateIdentifier) {
         return getPublisherFor(aggregateIdentifier);
     }
@@ -113,6 +120,22 @@ public class AnnotatedSagaTestFixture implements FixtureConfiguration, Continued
     @Override
     public GivenAggregateEventPublisher andThenAggregate(Object aggregateIdentifier) {
         return givenAggregate(aggregateIdentifier);
+    }
+
+    @Override
+    public ContinuedGivenState andThenTimeElapses(final Duration elapsedTime) {
+        for (EventMessage event : eventScheduler.advanceTime(elapsedTime)) {
+            sagaManager.handle(event);
+        }
+        return this;
+    }
+
+    @Override
+    public ContinuedGivenState andThenTimeAdvancesTo(final DateTime newDateTime) {
+        for (EventMessage event : eventScheduler.advanceTime(newDateTime)) {
+            sagaManager.handle(event);
+        }
+        return this;
     }
 
     @Override
@@ -165,6 +188,7 @@ public class AnnotatedSagaTestFixture implements FixtureConfiguration, Continued
 
         private void publish(Object... events) {
             DateTimeUtils.setCurrentMillisFixed(currentTime().getMillis());
+
             try {
                 for (Object event : events) {
                     sagaManager.handle(new GenericEventMessage<Object>(event));

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ public abstract class Fixtures {
      * org.axonframework.test.FixtureConfiguration} for more detailed usage information.
      *
      * @param aggregateType The aggregate under test
+     * @param <T>           The type of aggregate tested in the fixture
      * @return a new given-when-then style test fixture in configuration mode
      */
     public static <T extends EventSourcedAggregateRoot> FixtureConfiguration<T> newGivenWhenThenFixture(

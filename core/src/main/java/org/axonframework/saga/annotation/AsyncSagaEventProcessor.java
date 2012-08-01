@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import org.axonframework.eventhandling.TransactionStatus;
 import org.axonframework.saga.Saga;
 import org.axonframework.saga.SagaRepository;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -34,7 +33,7 @@ import java.util.TreeMap;
  * @author Allard Buijze
  * @since 2.0
  */
-final class AsyncSagaEventProcessor implements EventHandler<AsyncSagaProcessingEvent> {
+public final class AsyncSagaEventProcessor implements EventHandler<AsyncSagaProcessingEvent> {
 
     private final TransactionManager transactionManager;
     private final SagaRepository sagaRepository;
@@ -129,8 +128,7 @@ final class AsyncSagaEventProcessor implements EventHandler<AsyncSagaProcessingE
 
     private boolean invokeExistingSagas(AsyncSagaProcessingEvent entry) {
         boolean sagaInvoked = false;
-        Set<? extends Saga> sagas = sagaRepository.find(entry.getSagaType(),
-                                                        Collections.singleton(entry.getAssociationValue()));
+        Set<? extends Saga> sagas = sagaRepository.find(entry.getSagaType(), entry.getAssociationValue());
         for (Saga saga : sagas) {
             if (ownedByCurrentProcessor(saga.getSagaIdentifier())) {
                 processedSagas.put(saga.getSagaIdentifier(), saga);

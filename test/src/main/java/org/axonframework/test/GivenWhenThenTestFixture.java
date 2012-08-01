@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import org.axonframework.commandhandling.InterceptorChain;
 import org.axonframework.commandhandling.SimpleCommandBus;
 import org.axonframework.commandhandling.annotation.AggregateAnnotationCommandHandler;
 import org.axonframework.commandhandling.annotation.AnnotationCommandHandlerAdapter;
+import org.axonframework.common.annotation.SimpleResourceParameterResolverFactory;
 import org.axonframework.domain.AggregateRoot;
 import org.axonframework.domain.DomainEventMessage;
 import org.axonframework.domain.DomainEventStream;
@@ -39,7 +40,6 @@ import org.axonframework.eventsourcing.EventSourcedAggregateRoot;
 import org.axonframework.eventsourcing.EventSourcingRepository;
 import org.axonframework.eventstore.EventStore;
 import org.axonframework.eventstore.EventStoreException;
-import org.axonframework.monitoring.jmx.JmxConfiguration;
 import org.axonframework.repository.AggregateNotFoundException;
 import org.axonframework.unitofwork.DefaultUnitOfWork;
 import org.axonframework.unitofwork.UnitOfWork;
@@ -68,10 +68,12 @@ import static org.axonframework.common.ReflectionUtils.*;
  * A test fixture that allows the execution of given-when-then style test cases. For detailed usage information, see
  * {@link org.axonframework.test.FixtureConfiguration}.
  *
+ * @param <T> The type of Aggregate tested in this Fixture
  * @author Allard Buijze
  * @since 0.6
  */
-class GivenWhenThenTestFixture<T extends EventSourcedAggregateRoot> implements FixtureConfiguration<T>, TestExecutor {
+public class GivenWhenThenTestFixture<T extends EventSourcedAggregateRoot>
+        implements FixtureConfiguration<T>, TestExecutor {
 
     private static final Logger logger = LoggerFactory.getLogger(GivenWhenThenTestFixture.class);
 
@@ -88,6 +90,9 @@ class GivenWhenThenTestFixture<T extends EventSourcedAggregateRoot> implements F
     private long sequenceNumber = 0;
     private AggregateRoot workingAggregate;
     private boolean reportIllegalStateChange = true;
+    private final Class<T> aggregateType;
+    private boolean explicitCommandHandlersSet;
+    private final List<Object> injectableResources = new ArrayList<Object>();
 
     /**
      * Initializes a new given-when-then style test fixture for the given <code>aggregateType</code>.
@@ -95,7 +100,6 @@ class GivenWhenThenTestFixture<T extends EventSourcedAggregateRoot> implements F
      * @param aggregateType The aggregate to initialize the test fixture for
      */
     public GivenWhenThenTestFixture(Class<T> aggregateType) {
-        JmxConfiguration.getInstance().disableMonitoring();
         eventBus = new RecordingEventBus();
         commandBus = new SimpleCommandBus();
         eventStore = new RecordingEventStore();
@@ -103,7 +107,7 @@ class GivenWhenThenTestFixture<T extends EventSourcedAggregateRoot> implements F
         repository = new EventSourcingRepository<T>(aggregateType);
         repository.setEventStore(eventStore);
         repository.setEventBus(eventBus);
-        new AggregateAnnotationCommandHandler<T>(aggregateType, repository, commandBus).subscribe();
+        this.aggregateType = aggregateType;
     }
 
     @Override
@@ -116,6 +120,8 @@ class GivenWhenThenTestFixture<T extends EventSourcedAggregateRoot> implements F
 
     @Override
     public FixtureConfiguration<T> registerAnnotatedCommandHandler(Object annotatedCommandHandler) {
+        explicitCommandHandlersSet = true;
+        registerInjectableResources();
         AnnotationCommandHandlerAdapter.subscribe(annotatedCommandHandler, commandBus);
         return this;
     }
@@ -123,7 +129,27 @@ class GivenWhenThenTestFixture<T extends EventSourcedAggregateRoot> implements F
     @Override
     @SuppressWarnings({"unchecked"})
     public FixtureConfiguration<T> registerCommandHandler(Class<?> commandType, CommandHandler commandHandler) {
+        explicitCommandHandlersSet = true;
+        registerInjectableResources();
         commandBus.subscribe(commandType, commandHandler);
+        return this;
+    }
+
+    private void registerInjectableResources() {
+        injectableResources.add(commandBus);
+        injectableResources.add(eventBus);
+        SimpleResourceParameterResolverFactory.register(injectableResources);
+    }
+
+    @Override
+    public FixtureConfiguration<T> registerInjectableResource(Object resource) {
+        if (explicitCommandHandlersSet) {
+            throw new FixtureExecutionException("Cannot inject resources after command handler has been created. "
+                                                        + "Configure all resource before calling "
+                                                        + "registerCommandHandler() or "
+                                                        + "registerAnnotatedCommandHandler()");
+        }
+        injectableResources.add(resource);
         return this;
     }
 
@@ -168,6 +194,7 @@ class GivenWhenThenTestFixture<T extends EventSourcedAggregateRoot> implements F
     @SuppressWarnings({"unchecked"})
     @Override
     public ResultValidator when(Object command) {
+        finalizeConfiguration();
         ResultValidatorImpl resultValidator = new ResultValidatorImpl(storedEvents, publishedEvents);
         commandBus.setInterceptors(Collections.singletonList(new AggregateRegisteringInterceptor()));
 
@@ -177,20 +204,16 @@ class GivenWhenThenTestFixture<T extends EventSourcedAggregateRoot> implements F
         return resultValidator;
     }
 
-    private void detectIllegalStateChanges() {
-        if (workingAggregate != null && reportIllegalStateChange) {
-            repository.setEventStore(new EventStore() {
-                @Override
-                public void appendEvents(String type, DomainEventStream events) {
-                }
+    private void finalizeConfiguration() {
+        registerInjectableResources();
+        if (!explicitCommandHandlersSet) {
+            new AggregateAnnotationCommandHandler<T>(this.aggregateType, repository, commandBus).subscribe();
+        }
+        explicitCommandHandlersSet = true;
+    }
 
-                @Override
-                public DomainEventStream readEvents(String type, Object identifier) {
-                    List<DomainEventMessage> eventsToStream = new ArrayList<DomainEventMessage>(givenEvents);
-                    eventsToStream.addAll(storedEvents);
-                    return new SimpleDomainEventStream(eventsToStream);
-                }
-            });
+    private void detectIllegalStateChanges() {
+        if (aggregateIdentifier != null && workingAggregate != null && reportIllegalStateChange) {
             UnitOfWork uow = DefaultUnitOfWork.startAndGet();
             try {
                 EventSourcedAggregateRoot aggregate2 = repository.load(aggregateIdentifier);
@@ -208,12 +231,13 @@ class GivenWhenThenTestFixture<T extends EventSourcedAggregateRoot> implements F
                                                          + "but the Repository cannot recover the state of the "
                                                          + "aggregate, as it is considered deleted there.");
                 }
+            } catch (RuntimeException e) {
+                logger.warn("An Exception occurred while detecting illegal state changes in {}.",
+                            workingAggregate.getClass().getName(),
+                            e);
             } finally {
                 // rollback to prevent changes bing pushed to event store
                 uow.rollback();
-
-                // return to regular event store, just in case
-                repository.setEventStore(eventStore);
             }
         }
     }

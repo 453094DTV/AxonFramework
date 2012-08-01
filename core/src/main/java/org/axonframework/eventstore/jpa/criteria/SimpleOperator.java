@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ package org.axonframework.eventstore.jpa.criteria;
  * @author Allard Buijze
  * @since 2.0
  */
-class SimpleOperator extends JpaCriteria {
+public class SimpleOperator extends JpaCriteria {
 
     private final JpaProperty propertyName;
     private final String operator;
@@ -51,7 +51,7 @@ class SimpleOperator extends JpaCriteria {
         if (expression instanceof JpaProperty) {
             ((JpaProperty) expression).parse(entryKey, whereClause);
         } else {
-            whereClause.append(parameters.register(expression.toString()));
+            whereClause.append(parameters.register(expression));
         }
     }
 }

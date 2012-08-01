@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,17 +54,20 @@ public abstract class LockingRepository<T extends AggregateRoot> extends Abstrac
 
     /**
      * Initialize a repository with a pessimistic locking strategy.
+     * @param aggregateType The type of aggregate stored in this repository
      */
-    protected LockingRepository() {
-        this(LockingStrategy.PESSIMISTIC);
+    protected LockingRepository(Class<T> aggregateType) {
+        this(aggregateType, LockingStrategy.PESSIMISTIC);
     }
 
     /**
      * Initialize the repository with the given <code>lockingStrategy</code>.
      *
+     * @param aggregateType The type of aggregate stored in this repository
      * @param lockingStrategy the locking strategy to use
      */
-    protected LockingRepository(LockingStrategy lockingStrategy) {
+    protected LockingRepository(Class<T> aggregateType, LockingStrategy lockingStrategy) {
+        super(aggregateType);
         switch (lockingStrategy) {
             case PESSIMISTIC:
                 lockManager = new PessimisticLockManager();
@@ -85,9 +88,11 @@ public abstract class LockingRepository<T extends AggregateRoot> extends Abstrac
     /**
      * Utility constructor for testing.
      *
+     * @param aggregateType The type of aggregate stored in this repository
      * @param lockManager the lock manager to use
      */
-    LockingRepository(LockManager lockManager) {
+    LockingRepository(Class<T> aggregateType, LockManager lockManager) {
+        super(aggregateType);
         this.lockManager = lockManager;
     }
 

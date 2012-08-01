@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!--
-  ~ Copyright (c) 2010. Axon Framework
+  ~ Copyright (c) 2010-2012. Axon Framework
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -15,10 +15,10 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
+
 <beans xmlns="http://www.springframework.org/schema/beans"
-       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
-       ">
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:axon="http://www.axonframework.org/schema/core"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.axonframework.org/schema/core http://www.axonframework.org/schema/axon-core.xsd">
 
     <bean id="eventStoreBenchMark"
           class="org.axonframework.integrationtests.eventstore.benchmark.jpa.JpaEventStoreBenchMark">
@@ -26,11 +26,7 @@
         <constructor-arg index="1" ref="transactionManager"/>
     </bean>
 
-    <bean id="eventStore" class="org.axonframework.eventstore.jpa.JpaEventStore">
-        <constructor-arg>
-            <bean class="org.axonframework.serializer.xml.XStreamSerializer"/>
-        </constructor-arg>
-    </bean>
+    <axon:jpa-event-store id="eventStore"/>
 
     <!-- Infrastructure configuration -->
 
@@ -48,6 +44,11 @@
             </bean>
         </property>
         <property name="dataSource" ref="dataSource"/>
+        <property name="jpaPropertyMap">
+            <map>
+                <entry key="hibernate.jdbc.batch_size" value="20"/>
+            </map>
+        </property>
     </bean>
 
     <bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
@@ -63,6 +64,7 @@
         <property name="password" value="${jdbc.password}"/>
         <property name="maxPoolSize" value="150"/>
         <property name="minPoolSize" value="50"/>
+        <property name="initialPoolSize" value="100"/>
     </bean>
 
 </beans>

@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2010-2012. Axon Framework
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.axonframework.commandhandling.distributed;
 
 import org.axonframework.common.digest.Digester;
@@ -158,10 +174,15 @@ public class ConsistentHash implements Externalizable {
         StringWriter w = new StringWriter();
         w.append("ConsistentHash: {");
         Iterator<Map.Entry<String, MemberNode>> iterator = hashToMember.entrySet().iterator();
+        if (iterator.hasNext()) {
+            w.append("\n");
+        }
         while (iterator.hasNext()) {
             Map.Entry<String, MemberNode> entry = iterator.next();
-            w.append(entry.getKey() + " -> " + entry.getValue().getName());
-            w.append("(");
+            w.append(entry.getKey())
+             .append(" -> ")
+             .append(entry.getValue().getName())
+             .append("(");
             Iterator<String> commandIterator = entry.getValue().supportedCommands().iterator();
             while (commandIterator.hasNext()) {
                 w.append(commandIterator.next());
@@ -173,6 +194,7 @@ public class ConsistentHash implements Externalizable {
             if (iterator.hasNext()) {
                 w.append(", ");
             }
+            w.append("\n");
         }
         w.append("}");
         return w.toString();
@@ -227,6 +249,7 @@ public class ConsistentHash implements Externalizable {
             return Collections.unmodifiableSet(supportedCommandTypes);
         }
 
+        @SuppressWarnings("RedundantIfStatement")
         @Override
         public boolean equals(Object o) {
             if (this == o) {

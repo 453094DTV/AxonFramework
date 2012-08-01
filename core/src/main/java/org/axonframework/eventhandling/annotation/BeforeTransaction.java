@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,8 +39,11 @@ import java.lang.annotation.Target;
  * @author Allard Buijze
  * @see org.axonframework.eventhandling.TransactionStatus#setMaxTransactionSize(int)
  * @since 0.3
+ * @deprecated Transaction management on the EventListener level is deprecated. Use a transaction aware Cluster
+ *             instead.
  */
 @Documented
+@Deprecated
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface BeforeTransaction {

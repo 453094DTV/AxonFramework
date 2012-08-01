@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,14 @@ package org.axonframework.test;
 
 import org.axonframework.commandhandling.annotation.CommandHandler;
 import org.axonframework.domain.DomainEventMessage;
+import org.axonframework.eventhandling.EventBus;
 import org.axonframework.eventhandling.annotation.EventHandler;
 import org.axonframework.eventsourcing.annotation.AbstractAnnotatedAggregateRoot;
 import org.axonframework.eventsourcing.annotation.AggregateIdentifier;
 
 import java.util.UUID;
+
+import static org.junit.Assert.assertNotNull;
 
 /**
  * @author Allard Buijze
@@ -44,10 +47,10 @@ class AnnotatedAggregate extends AbstractAnnotatedAggregateRoot {
     }
 
     @CommandHandler
-    public AnnotatedAggregate(CreateAggregateCommand command) {
-        this.identifier = command.getAggregateIdentifier() == null ?
-                UUID.randomUUID() : command.getAggregateIdentifier();
-        apply(new MyEvent(0));
+    public AnnotatedAggregate(CreateAggregateCommand command, EventBus eventBus) {
+        assertNotNull("Expected EventBus to be injected as resource", eventBus);
+        apply(new MyEvent(command.getAggregateIdentifier() == null ?
+                                  UUID.randomUUID() : command.getAggregateIdentifier(), 0));
     }
 
     @CommandHandler
@@ -57,12 +60,13 @@ class AnnotatedAggregate extends AbstractAnnotatedAggregateRoot {
 
     @CommandHandler
     public void doSomethingIllegal(IllegalStateChangeCommand command) {
-        apply(new MyEvent(lastNumber + 1));
+        apply(new MyEvent(command.getAggregateIdentifier(), lastNumber + 1));
         lastNumber = command.getNewIllegalValue();
     }
 
     @EventHandler
     public void handleMyEvent(MyEvent event) {
+        identifier = event.getAggregateIdentifier();
         lastNumber = event.getSomeValue();
         if (entity == null) {
             entity = new MyEntity();
@@ -83,7 +87,7 @@ class AnnotatedAggregate extends AbstractAnnotatedAggregateRoot {
     public void doSomething(TestCommand command) {
         // this state change should be accepted, since it happens on a transient value
         counter++;
-        apply(new MyEvent(lastNumber + 1));
+        apply(new MyEvent(command.getAggregateIdentifier(), lastNumber + 1));
     }
 
     @Override

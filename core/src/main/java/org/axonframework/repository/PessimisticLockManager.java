@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 package org.axonframework.repository;
 
 import org.axonframework.domain.AggregateRoot;
-import org.axonframework.util.lock.IdentifierBasedLock;
+import org.axonframework.common.lock.IdentifierBasedLock;
 
 /**
  * Implementation of the {@link LockManager} that uses a pessimistic locking strategy. Calls to obtainLock will block
@@ -27,7 +27,7 @@ import org.axonframework.util.lock.IdentifierBasedLock;
  * @author Allard Buijze
  * @since 0.3
  */
-class PessimisticLockManager implements LockManager {
+public class PessimisticLockManager implements LockManager {
 
     private final IdentifierBasedLock lock = new IdentifierBasedLock();
 

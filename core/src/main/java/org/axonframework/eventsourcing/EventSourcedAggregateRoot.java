@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,21 +23,21 @@ import org.axonframework.domain.DomainEventStream;
  * Aggregate that can be initialized using a {@link org.axonframework.domain.DomainEventStream}. Aggregates that are
  * initialized using Event Sourcing should implement this interface.
  *
+ * @param <I> The type of the identifier of this aggregate
  * @author Allard Buijze
  * @see org.axonframework.eventsourcing.EventSourcingRepository
  * @since 0.3
  */
-public interface EventSourcedAggregateRoot extends AggregateRoot {
+public interface EventSourcedAggregateRoot<I> extends AggregateRoot<I> {
 
     /**
      * Initialize the state of this aggregate using the events in the provided {@link
      * org.axonframework.domain.DomainEventStream}. A call to this method on an aggregate that has already been
      * initialized will result in an {@link IllegalStateException}.
      *
-     * @param aggregateIdentifier The identifier of the aggregate
      * @param domainEventStream   the event stream containing the events that describe the state changes of this
      *                            aggregate
      * @throws IllegalStateException if this aggregate was already initialized.
      */
-    void initializeState(Object aggregateIdentifier, DomainEventStream domainEventStream);
+    void initializeState(DomainEventStream domainEventStream);
 }

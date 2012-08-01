@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,17 +53,11 @@ public class SimpleSagaManagerTest {
         saga1 = mock(Saga.class);
         when(saga1.getSagaIdentifier()).thenReturn("saga1");
         sagasFromRepository.add(saga1);
-        when(associationValueResolver.extractAssociationValue(event))
-                .thenReturn(setWith(new AssociationValue("key", "val")));
-        when(repository.find(eq(Saga.class), eq(setWith(new AssociationValue("key", "val")))))
-                .thenReturn(sagasFromRepository);
+        when(associationValueResolver.extractAssociationValue(event)).thenReturn(new AssociationValue("key", "val"));
+        when(repository.find(eq(Saga.class), eq(new AssociationValue("key", "val")))).thenReturn(sagasFromRepository);
         sagaFromFactory = mock(Saga.class);
         when(sagaFromFactory.getSagaIdentifier()).thenReturn("sagaFromFactory");
         when(sagaFactory.createSaga(Saga.class)).thenReturn(sagaFromFactory);
-    }
-
-    private <T> Set<T> setWith(T... associationValues) {
-        return new HashSet<T>(Arrays.asList(associationValues));
     }
 
     @Test

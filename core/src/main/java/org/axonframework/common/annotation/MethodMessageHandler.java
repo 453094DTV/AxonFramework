@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import static java.lang.String.format;
 import static org.axonframework.common.ReflectionUtils.ensureAccessible;
 
 /**
- * Represents a method recognized as a handler by the handler inspector (see {@link AbstractHandlerInspector}).
+ * Represents a method recognized as a handler by the handler inspector (see {@link MethodMessageHandlerInspector}).
  *
  * @author Allard Buijze
  * @since 2.0
@@ -129,5 +129,33 @@ public final class MethodMessageHandler extends AbstractMessageHandler {
         return format("HandlerMethod %s.%s for payload type %s: %s",
                       method.getDeclaringClass().getSimpleName(), method.getName(),
                       getPayloadType().getSimpleName(), method.toGenericString());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        if (!super.equals(o)) {
+            return false;
+        }
+
+        MethodMessageHandler that = (MethodMessageHandler) o;
+
+        if (!method.equals(that.method)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + method.hashCode();
+        return result;
     }
 }

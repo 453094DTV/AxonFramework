@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import java.util.Iterator;
  */
 public class DefaultInterceptorChain implements InterceptorChain {
 
-    private final CommandMessage<?> command;
+    private CommandMessage<?> command;
     private final CommandHandler handler;
     private Iterator<? extends CommandHandlerInterceptor> chain;
     private UnitOfWork unitOfWork;
@@ -56,6 +56,7 @@ public class DefaultInterceptorChain implements InterceptorChain {
     @SuppressWarnings({"unchecked"})
     @Override
     public Object proceed(CommandMessage<?> commandProceedWith) throws Throwable {
+        command = commandProceedWith;
         if (chain.hasNext()) {
             return chain.next().handle(commandProceedWith, unitOfWork, this);
         } else {

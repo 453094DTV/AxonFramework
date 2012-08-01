@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,9 +27,10 @@ import java.lang.reflect.InvocationTargetException;
  * @author Allard Buijze
  * @since 0.6
  */
-public final class MessageHandlerInvoker extends AbstractHandlerInspector {
+public final class MessageHandlerInvoker {
 
     private final Object target;
+    private final MethodMessageHandlerInspector inspector;
 
     /**
      * Initialize a handler invoker for the given <code>target</code> object that has handler method annotated with
@@ -39,7 +40,7 @@ public final class MessageHandlerInvoker extends AbstractHandlerInspector {
      * @param annotationType The type of annotation used to demarcate the handler methods
      */
     public MessageHandlerInvoker(Object target, Class<? extends Annotation> annotationType) {
-        super(target.getClass(), annotationType);
+        this.inspector = MethodMessageHandlerInspector.getInstance(target.getClass(), annotationType);
         this.target = target;
     }
 
@@ -80,12 +81,33 @@ public final class MessageHandlerInvoker extends AbstractHandlerInspector {
     }
 
     /**
+     * Finds the handler method that can handle the given <code>message</code>, or <code>null</code> if no such handler
+     * exists.
+     *
+     * @param message The message to find a handler for
+     * @return The handler for the given message, or <code>null</code> if none exists
+     */
+    public MethodMessageHandler findHandlerMethod(Message message) {
+        return inspector.findHandlerMethod(message);
+    }
+
+    /**
      * Returns the target on which handler methods are invoked.
      *
      * @return the target on which handler methods are invoked
      */
     public Object getTarget() {
         return target;
+    }
+
+    /**
+     * Returns the targetType on which handler methods are invoked. This is the runtime type of the object that
+     * contains the method that handles the messages (not per se the Class that declares the method).
+     *
+     * @return the targetType on which handler methods are invoked
+     */
+    public Class getTargetType() {
+        return inspector.getTargetType();
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,9 @@ import org.axonframework.saga.ResourceInjector;
 import org.axonframework.saga.Saga;
 import org.axonframework.saga.repository.AbstractSagaRepository;
 import org.axonframework.serializer.JavaSerializer;
+import org.axonframework.serializer.SerializedType;
 import org.axonframework.serializer.Serializer;
+import org.axonframework.serializer.SimpleSerializedObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,11 +67,11 @@ public class JpaSagaRepository extends AbstractSagaRepository {
     }
 
     @Override
-    public <T extends Saga> Set<T> find(Class<T> type, Set<AssociationValue> associationValues) {
+    public <T extends Saga> Set<T> find(Class<T> type, AssociationValue associationValue) {
         if (!initialized) {
             initialize();
         }
-        return super.find(type, associationValues);
+        return super.find(type, associationValue);
     }
 
     @Override
@@ -92,24 +94,28 @@ public class JpaSagaRepository extends AbstractSagaRepository {
     @Override
     protected void removeAssociationValue(AssociationValue associationValue, String sagaType, String sagaIdentifier) {
         EntityManager entityManager = entityManagerProvider.getEntityManager();
-        List<AssociationValueEntry> potentialCandidates = entityManager.createQuery(
-                "SELECT ae FROM AssociationValueEntry ae "
+        int updateCount = entityManager.createQuery(
+                "DELETE FROM AssociationValueEntry ae "
                         + "WHERE ae.associationKey = :associationKey "
+                        + "AND ae.associationValue = :associationValue "
                         + "AND ae.sagaType = :sagaType "
-                        + "AND  ae.sagaId = :sagaId")
-                                                                       .setParameter("associationKey",
-                                                                                     associationValue.getKey())
-                                                                       .setParameter("sagaType", sagaType)
-                                                                       .setParameter("sagaId", sagaIdentifier)
-                                                                       .getResultList();
-        for (AssociationValueEntry entry : potentialCandidates) {
-            if (associationValue.getValue().equals(entry.getAssociationValue().getValue())) {
-                entityManager.remove(entry);
-            }
+                        + "AND ae.sagaId = :sagaId")
+                                       .setParameter("associationKey", associationValue.getKey())
+                                       .setParameter("associationValue", associationValue.getValue())
+                                       .setParameter("sagaType", sagaType)
+                                       .setParameter("sagaId", sagaIdentifier)
+                                       .executeUpdate();
+        if (updateCount == 0 && logger.isWarnEnabled()) {
+            logger.warn("Wanted to remove association value, but it was already gone: sagaId= {}, key={}, value={}",
+                        new Object[]{sagaIdentifier,
+                                associationValue.getKey(),
+                                associationValue.getValue()});
         }
-        if (useExplicitFlush) {
-            entityManager.flush();
-        }
+    }
+
+    @Override
+    protected String typeOf(Class<? extends Saga> sagaClass) {
+        return serializer.typeForClass(sagaClass).getName();
     }
 
     @Override
@@ -121,15 +127,25 @@ public class JpaSagaRepository extends AbstractSagaRepository {
         }
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     protected <T extends Saga> T loadSaga(Class<T> type, String sagaId) {
         EntityManager entityManager = entityManagerProvider.getEntityManager();
-        SagaEntry entry = entityManager.find(SagaEntry.class, sagaId);
-        if (entry == null) {
+        List<byte[]> serializedSagaList = (List<byte[]>) entityManager
+                .createQuery("SELECT se.serializedSaga FROM SagaEntry se WHERE se.sagaId = :sagaId")
+                .setParameter("sagaId", sagaId)
+                .setMaxResults(1)
+                .getResultList();
+        if (serializedSagaList == null || serializedSagaList.isEmpty()) {
             throw new NoSuchSagaException(type, sagaId);
         }
-        Saga loadedSaga = entry.getSaga(serializer);
+        byte[] serializedSaga = serializedSagaList.get(0);
+        SerializedType serializedType = serializer.typeForClass(type);
+        Saga loadedSaga = serializer.deserialize(new SimpleSerializedObject<byte[]>(serializedSaga,
+                                                                                    byte[].class,
+                                                                                    serializedType));
         if (!type.isInstance(loadedSaga)) {
+            logger.debug("Saga with id [{}] was of another type than expected. It is ignored.", sagaId);
             return null;
         }
         T storedSaga = type.cast(loadedSaga);
@@ -137,8 +153,7 @@ public class JpaSagaRepository extends AbstractSagaRepository {
             injector.injectResources(storedSaga);
         }
         if (logger.isDebugEnabled()) {
-            logger.debug("Loaded saga id {} as {}", sagaId, new String(entry.getSerializedSaga(),
-                                                                       Charset.forName("UTF-8")));
+            logger.debug("Loaded saga id [{}] of type [{}]", sagaId, loadedSaga.getClass().getName());
         }
         return storedSaga;
     }
@@ -166,9 +181,24 @@ public class JpaSagaRepository extends AbstractSagaRepository {
             logger.debug("Updating saga id {} as {}", saga.getSagaIdentifier(), new String(entry.getSerializedSaga(),
                                                                                            Charset.forName("UTF-8")));
         }
-        entityManager.merge(entry);
         if (useExplicitFlush) {
             entityManager.flush();
+        }
+        int updateCount = entityManager.createQuery(
+                "UPDATE SagaEntry s SET s.serializedSaga = :serializedSaga, s.revision = :revision "
+                        + "WHERE s.sagaId = :sagaId AND s.sagaType = :sagaType")
+                                       .setParameter("serializedSaga", entry.getSerializedSaga())
+
+                                       .setParameter("revision", entry.getRevision())
+                                       .setParameter("sagaId", entry.getSagaId())
+                                       .setParameter("sagaType", entry.getSagaType())
+                                       .executeUpdate();
+        if (updateCount == 0) {
+            logger.warn("Expected to be able to update a Saga instance, but no rows were found. Inserting instead.");
+            entityManager.persist(entry);
+            if (useExplicitFlush) {
+                entityManager.flush();
+            }
         }
     }
 

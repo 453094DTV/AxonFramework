@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,6 +82,8 @@ public interface Property {
     /**
      * Returns a criteria instance where the property must be "in" the given <code>expression</code>. Some event stores
      * also allow the given expression to be a property.
+     * <p/>
+     * Note that the given <code>expression</code> must describe a collection of some sort.
      *
      * @param expression The expression to match against the property
      * @return a criteria instance describing a "is in" requirement.

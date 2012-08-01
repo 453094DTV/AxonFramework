@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,17 @@
 
 package org.axonframework.commandhandling.annotation;
 
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
  * @author Allard Buijze
  */
 @Transactional
-public class TransactionalCommandHandler extends TransactionalCommandHandlerSuperClass {
+public class TransactionalCommandHandler extends TransactionalCommandHandlerSuperClass implements SomeCommandHandlerInterface {
 
+    @Override
+    @Secured("ROLE_INTERFACE")
     @CommandHandler
     public void handleStringCommand(String command) {
         invocations++;

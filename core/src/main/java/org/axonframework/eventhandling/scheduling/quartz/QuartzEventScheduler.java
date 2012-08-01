@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,7 +90,7 @@ public class QuartzEventScheduler implements org.axonframework.eventhandling.sch
         JobDataMap jobDataMap = new JobDataMap();
         jobDataMap.put(FireEventJob.EVENT_KEY, event);
         return JobBuilder.newJob(FireEventJob.class)
-                         .withDescription(event.getClass().getName())
+                         .withDescription(event.getPayloadType().getName())
                          .withIdentity(jobKey)
                          .usingJobData(jobDataMap)
                          .build();

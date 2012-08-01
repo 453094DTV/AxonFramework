@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,12 +28,12 @@ public abstract class JpaCriteria implements Criteria {
 
     @Override
     public JpaCriteria and(Criteria criteria) {
-        return new And(this, (JpaCriteria) criteria);
+        return new BinaryOperator(this, "AND", (JpaCriteria) criteria);
     }
 
     @Override
     public JpaCriteria or(Criteria criteria) {
-        return new Or(this, (JpaCriteria) criteria);
+        return new BinaryOperator(this, "OR", (JpaCriteria) criteria);
     }
 
     /**

@@ -1,5 +1,5 @@
 <!--
-  ~ Copyright (c) 2010-2011. Axon Framework
+  ~ Copyright (c) 2010-2012. Axon Framework
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@
     <import resource="db-context.xml"/>
     <import resource="test-context.xml"/>
 
-    <axon:event-bus id="eventBus" register-mbeans="false"/>
+    <axon:event-bus id="eventBus" />
 
     <axon:jpa-saga-repository id="sagaRepository"/>
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ import static org.axonframework.test.saga.DescriptionUtils.describe;
  * @author Allard Buijze
  * @since 1.1
  */
-class EventValidator implements EventListener {
+public class EventValidator implements EventListener {
 
     private final List<EventMessage> publishedEvents = new ArrayList<EventMessage>();
     private final EventBus eventBus;

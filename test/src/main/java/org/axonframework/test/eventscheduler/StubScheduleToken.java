@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import org.joda.time.DateTime;
  * @author Allard Buijze
  * @since 1.1
  */
-class StubScheduleToken implements ScheduleToken, Comparable<StubScheduleToken>, ScheduledItem {
+public class StubScheduleToken implements ScheduleToken, Comparable<StubScheduleToken>, ScheduledItem {
 
     private static final long serialVersionUID = 3763093001261110665L;
 

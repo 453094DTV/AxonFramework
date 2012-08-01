@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ import static org.axonframework.common.ReflectionUtils.ensureAccessible;
  * @author Allard Buijze
  * @since 0.7
  */
-public class GenericAggregateFactory<T extends EventSourcedAggregateRoot> implements AggregateFactory<T> {
+public class GenericAggregateFactory<T extends EventSourcedAggregateRoot> extends AbstractAggregateFactory<T> {
 
     private final String typeIdentifier;
     private final Class<T> aggregateType;
@@ -58,53 +58,48 @@ public class GenericAggregateFactory<T extends EventSourcedAggregateRoot> implem
         this.aggregateType = aggregateType;
         this.typeIdentifier = aggregateType.getSimpleName();
         try {
-            Constructor<T> constructor = aggregateType.getDeclaredConstructor();
-            ensureAccessible(constructor);
-            this.constructor = constructor;
+            this.constructor = ensureAccessible(aggregateType.getDeclaredConstructor());
         } catch (NoSuchMethodException e) {
             throw new IncompatibleAggregateException(format("The aggregate [%s] doesn't provide a no-arg constructor.",
-                                                            aggregateType.getSimpleName()));
+                                                            aggregateType.getSimpleName()), e);
         }
     }
 
     /**
      * {@inheritDoc}
      * <p/>
-     * This implementation is {@link AggregateSnapshot} aware. If the first event is an AggregateSnapshot, the
-     * aggregate
-     * is retrieved from the snapshot, instead of creating a new -blank- instance.
-     *
      * @throws IncompatibleAggregateException if the aggregate constructor throws an exception, or if the JVM security
      *                                        settings prevent the GenericAggregateFactory from calling the
      *                                        constructor.
      */
     @SuppressWarnings({"unchecked"})
     @Override
-    public T createAggregate(Object aggregateIdentifier, DomainEventMessage firstEvent) {
-        if (AggregateSnapshot.class.isInstance(firstEvent)) {
-            return (T) ((AggregateSnapshot) firstEvent).getAggregate();
-        } else {
-            try {
-                return constructor.newInstance();
-            } catch (InstantiationException e) {
-                throw new IncompatibleAggregateException(format(
-                        "The aggregate [%s] does not have a suitable no-arg constructor.",
-                        aggregateType.getSimpleName()), e);
-            } catch (IllegalAccessException e) {
-                throw new IncompatibleAggregateException(format(
-                        "The aggregate no-arg constructor of the aggregate [%s] is not accessible. Please ensure that "
-                                + "the constructor is public or that the Security Manager allows access through "
-                                + "reflection.", aggregateType.getSimpleName()), e);
-            } catch (InvocationTargetException e) {
-                throw new IncompatibleAggregateException(format(
-                        "The no-arg constructor of [%s] threw an exception on invocation.",
-                        aggregateType.getSimpleName()), e);
-            }
+    protected T doCreateAggregate(Object aggregateIdentifier, DomainEventMessage firstEvent) {
+        try {
+            return constructor.newInstance();
+        } catch (InstantiationException e) {
+            throw new IncompatibleAggregateException(format(
+                    "The aggregate [%s] does not have a suitable no-arg constructor.",
+                    aggregateType.getSimpleName()), e);
+        } catch (IllegalAccessException e) {
+            throw new IncompatibleAggregateException(format(
+                    "The aggregate no-arg constructor of the aggregate [%s] is not accessible. Please ensure that "
+                            + "the constructor is public or that the Security Manager allows access through "
+                            + "reflection.", aggregateType.getSimpleName()), e);
+        } catch (InvocationTargetException e) {
+            throw new IncompatibleAggregateException(format(
+                    "The no-arg constructor of [%s] threw an exception on invocation.",
+                    aggregateType.getSimpleName()), e);
         }
     }
 
     @Override
     public String getTypeIdentifier() {
         return typeIdentifier;
+    }
+
+    @Override
+    public Class<T> getAggregateType() {
+        return aggregateType;
     }
 }

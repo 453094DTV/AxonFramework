@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,8 @@ import org.axonframework.domain.MetaData;
 import org.axonframework.domain.SimpleDomainEventStream;
 import org.axonframework.domain.StubDomainEvent;
 import org.axonframework.eventhandling.EventBus;
+import org.axonframework.eventsourcing.AbstractAggregateFactory;
 import org.axonframework.eventsourcing.AbstractEventSourcedAggregateRoot;
-import org.axonframework.eventsourcing.AggregateFactory;
-import org.axonframework.eventsourcing.AggregateSnapshot;
 import org.axonframework.eventsourcing.ConflictResolver;
 import org.axonframework.eventsourcing.EventSourcedAggregateRoot;
 import org.axonframework.eventsourcing.EventSourcingRepository;
@@ -110,25 +109,13 @@ public class EventSourcingRepositoryTest {
     }
 
     @Test
-    public void testLoadWithAggregateSnapshot() {
+    public void testLoad_FirstEventIsSnapshot() {
         UUID identifier = UUID.randomUUID();
-        TestAggregate simpleAggregate = new TestAggregate(identifier);
-        simpleAggregate.apply(new GenericDomainEventMessage<String>(identifier, (long) 0,
-                                                                    "Mock contents", MetaData.emptyInstance()));
-        simpleAggregate.commitEvents();
-        AggregateSnapshot<AbstractEventSourcedAggregateRoot> snapshotEvent =
-                new AggregateSnapshot<AbstractEventSourcedAggregateRoot>(simpleAggregate);
-        when(mockEventStore.readEvents("test", identifier))
-                .thenReturn(new SimpleDomainEventStream(snapshotEvent, new GenericDomainEventMessage<String>(
-                        identifier,
-                        (long) 1,
-                        "Mock contents", MetaData
-                        .emptyInstance()
-                )));
-        EventSourcedAggregateRoot actual = testSubject.load(identifier, null);
-
-        assertSame(simpleAggregate, actual);
-        assertEquals(Long.valueOf(1), actual.getVersion());
+        TestAggregate aggregate = new TestAggregate(identifier);
+        when(mockEventStore.readEvents("test", identifier)).thenReturn(new SimpleDomainEventStream(
+                new GenericDomainEventMessage<TestAggregate>(identifier, 10, aggregate)
+        ));
+        assertSame(aggregate, testSubject.load(identifier));
     }
 
     @Test
@@ -297,10 +284,10 @@ public class EventSourcingRepositoryTest {
         inOrder.verify(decorator2.lastSpy).next();
     }
 
-    private static class SubtAggregateFactory implements AggregateFactory<TestAggregate> {
+    private static class SubtAggregateFactory extends AbstractAggregateFactory<TestAggregate> {
 
         @Override
-        public TestAggregate createAggregate(Object aggregateIdentifier,
+        public TestAggregate doCreateAggregate(Object aggregateIdentifier,
                                              DomainEventMessage firstEvent) {
             return new TestAggregate((UUID) aggregateIdentifier);
         }
@@ -308,6 +295,11 @@ public class EventSourcingRepositoryTest {
         @Override
         public String getTypeIdentifier() {
             return "test";
+        }
+
+        @Override
+        public Class<TestAggregate> getAggregateType() {
+            return TestAggregate.class;
         }
     }
 
@@ -327,12 +319,8 @@ public class EventSourcingRepositoryTest {
 
         @Override
         protected void handle(DomainEventMessage event) {
+            identifier = (UUID) event.getAggregateIdentifier();
             handledEvents.add(event);
-        }
-
-        @Override
-        protected void initialize(Object aggregateIdentifier) {
-            identifier = (UUID) aggregateIdentifier;
         }
 
         public List<EventMessage> getHandledEvents() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ public class EventSourcingRepository<T extends EventSourcedAggregateRoot> extend
      * aggregate instances of given <code>aggregateType</code>.
      *
      * @param aggregateType The type of aggregate stored in this repository
-     * @see org.axonframework.repository.LockingRepository#LockingRepository()
+     * @see org.axonframework.repository.LockingRepository#LockingRepository(Class)
      */
     public EventSourcingRepository(final Class<T> aggregateType) {
         this(new GenericAggregateFactory<T>(aggregateType));
@@ -72,9 +72,10 @@ public class EventSourcingRepository<T extends EventSourcedAggregateRoot> extend
      * create new aggregate instances.
      *
      * @param aggregateFactory The factory for new aggregate instances
-     * @see org.axonframework.repository.LockingRepository#LockingRepository()
+     * @see org.axonframework.repository.LockingRepository#LockingRepository(Class)
      */
     public EventSourcingRepository(final AggregateFactory<T> aggregateFactory) {
+        super(aggregateFactory.getAggregateType());
         this.aggregateFactory = aggregateFactory;
     }
 
@@ -86,7 +87,7 @@ public class EventSourcingRepository<T extends EventSourcedAggregateRoot> extend
      */
     public EventSourcingRepository(final AggregateFactory<T> aggregateFactory,
                                    final LockingStrategy lockingStrategy) {
-        super(lockingStrategy);
+        super(aggregateFactory.getAggregateType(), lockingStrategy);
         this.aggregateFactory = aggregateFactory;
     }
 
@@ -153,9 +154,9 @@ public class EventSourcingRepository<T extends EventSourcedAggregateRoot> extend
             events = decorator.decorateForRead(getTypeIdentifier(), aggregateIdentifier, events);
         }
 
-        final T aggregate = createAggregate(aggregateIdentifier, events.peek());
+        final T aggregate = aggregateFactory.createAggregate(aggregateIdentifier, events.peek());
         List<DomainEventMessage> unseenEvents = new ArrayList<DomainEventMessage>();
-        aggregate.initializeState(aggregateIdentifier, new CapturingEventStream(events, unseenEvents, expectedVersion));
+        aggregate.initializeState(new CapturingEventStream(events, unseenEvents, expectedVersion));
         if (aggregate.isDeleted()) {
             throw new AggregateDeletedException(aggregateIdentifier);
         }
@@ -178,17 +179,6 @@ public class EventSourcingRepository<T extends EventSourcedAggregateRoot> extend
             unseenEvents.add(domainEventStream.next());
         }
         return unseenEvents;
-    }
-
-    @SuppressWarnings({"unchecked"})
-    private T createAggregate(Object aggregateIdentifier, DomainEventMessage firstEvent) {
-        T aggregate;
-        if (AggregateSnapshot.class.isInstance(firstEvent)) {
-            aggregate = (T) ((AggregateSnapshot) firstEvent).getAggregate();
-        } else {
-            aggregate = aggregateFactory.createAggregate(aggregateIdentifier, firstEvent);
-        }
-        return aggregate;
     }
 
     /**

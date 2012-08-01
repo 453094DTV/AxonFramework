@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,4 +75,13 @@ public interface Serializer {
      * @return the Class representing the type of the serialized Object.
      */
     Class classForType(SerializedType type);
+
+    /**
+     * Returns the type identifier for the given class. This is the type identifier of the Serialized object as
+     * returned by {@link #serialize(Object, Class)}.
+     *
+     * @param type Class representing the type of the serializable Object.
+     * @return The type identifier of the object
+     */
+    SerializedType typeForClass(Class type);
 }

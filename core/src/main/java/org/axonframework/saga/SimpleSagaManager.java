@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -43,6 +43,20 @@ public class SimpleSagaManager extends AbstractSagaManager {
     private Class<? extends Saga> sagaType;
 
     /**
+     * Initialize a SimpleSagaManager backed by the given resources, using a GenericSagaFactory.
+     *
+     * @param sagaType                 The type of Saga managed by this SagaManager
+     * @param sagaRepository           The repository providing access to Saga instances
+     * @param associationValueResolver The instance providing AssociationValues for incoming Events
+     * @param eventBus                 The event bus that the manager should register to
+     */
+    public SimpleSagaManager(Class<? extends Saga> sagaType, SagaRepository sagaRepository,
+                             AssociationValueResolver associationValueResolver,
+                             EventBus eventBus) {
+        this(sagaType, sagaRepository, associationValueResolver, new GenericSagaFactory(), eventBus);
+    }
+
+    /**
      * Initialize a SimpleSagaManager backed by the given resources.
      *
      * @param sagaType                 The type of Saga managed by this SagaManager
@@ -59,27 +73,10 @@ public class SimpleSagaManager extends AbstractSagaManager {
         this.associationValueResolver = associationValueResolver;
     }
 
-    /**
-     * Initialize a SimpleSagaManager backed by the given resources, using a GenericSagaFactory.
-     *
-     * @param sagaType                 The type of Saga managed by this SagaManager
-     * @param sagaRepository           The repository providing access to Saga instances
-     * @param associationValueResolver The instance providing AssociationValues for incoming Events
-     * @param eventBus                 The event bus that the manager should register to
-     */
-    public SimpleSagaManager(Class<? extends Saga> sagaType, SagaRepository sagaRepository,
-                             AssociationValueResolver associationValueResolver,
-                             EventBus eventBus) {
-        super(eventBus, sagaRepository, new GenericSagaFactory());
-        this.sagaType = sagaType;
-        this.associationValueResolver = associationValueResolver;
-    }
-
     @Override
     protected Set<Saga> findSagas(EventMessage event) {
-        Set<AssociationValue> associationValue = associationValueResolver.extractAssociationValue(event);
-        Set<Saga> sagas = new HashSet<Saga>();
-        sagas.addAll(getSagaRepository().find(sagaType, associationValue));
+        AssociationValue associationValue = associationValueResolver.extractAssociationValue(event);
+        Set<Saga> sagas = new HashSet<Saga>(getSagaRepository().find(sagaType, associationValue));
         if (sagas.isEmpty() && isAssignableClassIn(event.getPayloadType(), eventsToOptionallyCreateNewSagasFor)
                 || isAssignableClassIn(event.getPayloadType(), eventsToAlwaysCreateNewSagasFor)) {
             Saga saga = createSaga(sagaType);
@@ -116,5 +113,10 @@ public class SimpleSagaManager extends AbstractSagaManager {
      */
     public void setEventsToOptionallyCreateNewSagasFor(List<Class<?>> events) {
         this.eventsToOptionallyCreateNewSagasFor = events;
+    }
+
+    @Override
+    public Class<?> getTargetType() {
+        return sagaType;
     }
 }

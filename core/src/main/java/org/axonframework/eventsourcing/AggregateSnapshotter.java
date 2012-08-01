@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.axonframework.eventsourcing;
 
 import org.axonframework.domain.DomainEventMessage;
 import org.axonframework.domain.DomainEventStream;
+import org.axonframework.domain.GenericDomainEventMessage;
 
 import java.util.List;
 import java.util.Map;
@@ -42,16 +43,12 @@ public class AggregateSnapshotter extends AbstractSnapshotter {
                                                 DomainEventStream eventStream) {
 
         DomainEventMessage firstEvent = eventStream.peek();
-        EventSourcedAggregateRoot aggregate;
-        if (firstEvent instanceof AggregateSnapshot) {
-            aggregate = ((AggregateSnapshot) firstEvent).getAggregate();
-        } else {
-            AggregateFactory<?> aggregateFactory = aggregateFactories.get(typeIdentifier);
-            aggregate = aggregateFactory.createAggregate(aggregateIdentifier, firstEvent);
-        }
-        aggregate.initializeState(aggregateIdentifier, eventStream);
+        AggregateFactory<?> aggregateFactory = aggregateFactories.get(typeIdentifier);
+        EventSourcedAggregateRoot aggregate = aggregateFactory.createAggregate(aggregateIdentifier, firstEvent);
+        aggregate.initializeState(eventStream);
 
-        return new AggregateSnapshot<EventSourcedAggregateRoot>(aggregate);
+        return new GenericDomainEventMessage<EventSourcedAggregateRoot>(
+                aggregate.getIdentifier(), aggregate.getVersion(), aggregate);
     }
 
     /**

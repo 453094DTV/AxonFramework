@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011. Axon Framework
+ * Copyright (c) 2010-2012. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import org.axonframework.common.ReflectionUtils;
 import org.axonframework.domain.AbstractAggregateRoot;
 import org.axonframework.domain.DomainEventMessage;
 import org.axonframework.domain.DomainEventStream;
+import org.axonframework.domain.GenericDomainEventMessage;
 import org.axonframework.domain.MetaData;
 
 import java.util.Collection;
@@ -31,12 +32,13 @@ import javax.persistence.MappedSuperclass;
  * uncommitted events. It also provides convenience methods to initialize the state of the aggregate root based on a
  * {@link org.axonframework.domain.DomainEventStream}, which can be used for event sourcing.
  *
+ * @param <I> The type of the identifier of this aggregate
  * @author Allard Buijze
  * @since 0.1
  */
 @MappedSuperclass
-public abstract class AbstractEventSourcedAggregateRoot extends AbstractAggregateRoot
-        implements EventSourcedAggregateRoot {
+public abstract class AbstractEventSourcedAggregateRoot<I> extends AbstractAggregateRoot<I>
+        implements EventSourcedAggregateRoot<I> {
 
     private static final long serialVersionUID = 5868786029296883724L;
 
@@ -52,16 +54,13 @@ public abstract class AbstractEventSourcedAggregateRoot extends AbstractAggregat
      * @throws IllegalStateException if this aggregate was already initialized.
      */
     @Override
-    public void initializeState(Object identifier, DomainEventStream domainEventStream) {
+    public void initializeState(DomainEventStream domainEventStream) {
         Assert.state(getUncommittedEventCount() == 0, "Aggregate is already initialized");
-        initialize(identifier);
         long lastSequenceNumber = -1;
         while (domainEventStream.hasNext()) {
             DomainEventMessage event = domainEventStream.next();
             lastSequenceNumber = event.getSequenceNumber();
-            if (!(event instanceof AggregateSnapshot)) {
-                handleRecursively(event);
-            }
+            handleRecursively(event);
         }
         initializeEventStream(lastSequenceNumber);
     }
@@ -88,8 +87,19 @@ public abstract class AbstractEventSourcedAggregateRoot extends AbstractAggregat
      * @param metaData     any meta-data that must be registered with the Event
      */
     protected void apply(Object eventPayload, MetaData metaData) {
-        DomainEventMessage event = registerEvent(metaData, eventPayload);
-        handleRecursively(event);
+        if (getIdentifier() == null) {
+            // workaround for aggregates that set the aggregate identifier in an Event Handler
+            if (getUncommittedEventCount() > 0 || getVersion() != null) {
+                throw new IncompatibleAggregateException("The Aggregate Identifier has not been initialized. "
+                                                                 + "It must be initialized at the latest when the "
+                                                                 + "first event is applied.");
+            }
+            handleRecursively(new GenericDomainEventMessage<Object>(null, 0, eventPayload, metaData));
+            registerEvent(metaData, eventPayload);
+        } else {
+            DomainEventMessage event = registerEvent(metaData, eventPayload);
+            handleRecursively(event);
+        }
     }
 
     private void handleRecursively(DomainEventMessage event) {
@@ -130,13 +140,6 @@ public abstract class AbstractEventSourcedAggregateRoot extends AbstractAggregat
      * @param event The event to handle
      */
     protected abstract void handle(DomainEventMessage event);
-
-    /**
-     * Initialize the aggregate by setting the aggregate identifier.
-     *
-     * @param aggregateIdentifier The identifier of the aggregate
-     */
-    protected abstract void initialize(Object aggregateIdentifier);
 
     @Override
     public Long getVersion() {
